@@ -1,15 +1,12 @@
 package model
 
 type Config struct {
-	Name       string
-	Version    string
-	Parameters map[string]string
+	Name       string            `json:"name"`
+	Version    int               `json:"version"`
+	Parameters map[string]string `json:"params"`
 }
 
 type ConfigRepository interface {
-	AddConfig(config Config) error
-	DeleteConfig(name string, version string) error
-	UpdateConfig(name string, version string, config Config) error
-	ListConfigs() ([]Config, error)
-	FindConfigByNameAndVersion(name string, version string) (*Config, error)
+	AddConfig(config Config)
+	GetConfig(name string, version int) (Config, error)
 }
