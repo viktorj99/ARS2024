@@ -3,11 +3,12 @@ package main
 import (
 	"projekat/model"
 	"projekat/repository"
+	"projekat/service"
 )
 
 func main() {
-	repo := repository.NewConfigInMemRepository()
-
+	repo := repository.NewConfigInMemRepository();
+	service := service.NewConfigService(repo);
 	params := make(map[string]string)
 	params["username"] = "pera"
 	params["port"] = "5432"
@@ -17,6 +18,6 @@ func main() {
 		Parameters:  params,
 	}
 	
-	repo.AddConfig(config)
-	repo.GetConfig(config.Name, config.Version)
+	service.AddConfig(config)
+	service.GetConfig(config.Name, config.Version)
 }

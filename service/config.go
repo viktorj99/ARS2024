@@ -1,22 +1,24 @@
 package service
 
 import (
-	"fmt"
 	"projekat/model"
 )
 
+//Klasa
 type ConfigService struct {
-	repo model.ConfigRepository
+	repository model.ConfigRepository
 }
 
-func NewConfigService(repo model.ConfigRepository) ConfigService {
-	return ConfigService{
-		repo: repo,
+func NewConfigService(repository model.ConfigRepository) ConfigService {
+	return ConfigService {
+		repository: repository,
 	}
 }
 
-//todo: dodati metode za kreiranje, brisanje itd..
+func (s ConfigService) AddConfig(config model.Config) {
+	s.repository.AddConfig(config);
+}
 
-func (s ConfigService) Hello() {
-	fmt.Println("Hello from config service")
+func (s ConfigService) GetConfig (name string, version int) (model.Config, error) {
+	return s.repository.GetConfig(name, version);
 }
