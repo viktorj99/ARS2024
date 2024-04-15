@@ -21,12 +21,14 @@ func main() {
 		Version:    2,
 		Parameters: params,
 	}
+
 	service.AddConfig(config)
 	handler := handlers.NewConfigHandler(service)
 
 	router := mux.NewRouter()
 
 	router.HandleFunc("/configs/{name}/{version}", handler.GetConfig).Methods("GET")
+	router.HandleFunc("/configs", handler.AddConfig).Methods("POST")
 
 	http.ListenAndServe("localhost:8000", router)
 }

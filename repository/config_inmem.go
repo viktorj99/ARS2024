@@ -6,12 +6,12 @@ import (
 	"projekat/model"
 )
 
-//Klasa
+// Klasa
 type ConfigInMemRepository struct {
 	configs map[string]model.Config
 }
 
-//Konstruktor
+// Konstruktor
 func NewConfigInMemRepository() model.ConfigRepository {
 	return ConfigInMemRepository{
 		configs: make(map[string]model.Config),
@@ -21,10 +21,9 @@ func NewConfigInMemRepository() model.ConfigRepository {
 func (c ConfigInMemRepository) AddConfig(config model.Config) {
 	key := fmt.Sprintf("%s/%d", config.Name, config.Version)
 	c.configs[key] = config
-	fmt.Println(c.configs)
 }
 
-func (c ConfigInMemRepository) GetConfig(name string, version int) (model.Config, error)  {
+func (c ConfigInMemRepository) GetConfig(name string, version int) (model.Config, error) {
 	key := fmt.Sprintf("%s/%d", name, version)
 	config, ok := c.configs[key]
 	// fmt.Println(config)
