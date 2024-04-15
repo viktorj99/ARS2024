@@ -1,9 +1,13 @@
 package main
 
 import (
+	"net/http"
+	"projekat/handlers"
 	"projekat/model"
 	"projekat/repository"
 	"projekat/service"
+
+	"github.com/gorilla/mux"
 )
 
 func main() {
@@ -17,14 +21,12 @@ func main() {
 		Version:    2,
 		Parameters: params,
 	}
-	config2 := model.Config{
-		Name:       "viktorova",
-		Version:    2,
-		Parameters: params,
-	}
 	service.AddConfig(config)
-	service.GetConfig(config.Name, config.Version)
-	service.AddConfig(config2)
-	service.GetConfig(config2.Name, config2.Version)
+	handler := handlers.NewConfigHandler(service)
 
+	router := mux.NewRouter()
+
+	router.HandleFunc("/configs/{name}/{version}", handler.GetConfig).Methods("GET")
+
+	http.ListenAndServe("localhost:8000", router)
 }
