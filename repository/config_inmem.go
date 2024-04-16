@@ -32,3 +32,13 @@ func (c ConfigInMemRepository) GetConfig(name string, version int) (model.Config
 	}
 	return config, nil
 }
+
+func (c ConfigInMemRepository) DeleteConfig(name string, version int) error {
+	key := fmt.Sprintf("%s/%d", name, version)
+	if _, exists := c.configs[key]; !exists {
+        return fmt.Errorf("config not found")
+    }
+    delete(c.configs, key)
+    return nil
+	
+}

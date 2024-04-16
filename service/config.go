@@ -22,3 +22,7 @@ func (s ConfigService) AddConfig(config model.Config) {
 func (s ConfigService) GetConfig (name string, version int) (model.Config, error) {
 	return s.repository.GetConfig(name, version);
 }
+
+func (s ConfigService) DeleteConfig (name string, version int) error {
+	return s.repository.DeleteConfig(name, version);
+}

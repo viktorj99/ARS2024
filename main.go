@@ -29,6 +29,7 @@ func main() {
 
 	router.HandleFunc("/configs/{name}/{version}", handler.GetConfig).Methods("GET")
 	router.HandleFunc("/configs", handler.AddConfig).Methods("POST")
+	router.HandleFunc("/configs/{name}/{version}", handler.DeleteConfig).Methods("DELETE")
 
 	http.ListenAndServe("localhost:8000", router)
 }
