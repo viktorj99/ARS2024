@@ -34,7 +34,7 @@ func (c ConfigGroupInMemRepository) GetConfigGroup(name string, version int) (mo
 func (c ConfigGroupInMemRepository) DeleteConfigGroup(name string, version int) error {
 	key := fmt.Sprintf("%s/%d", name, version)
 	if _, exists := c.configGroups[key]; !exists {
-		return fmt.Errorf("config not found")
+		return fmt.Errorf("config not found!")
 	}
 	delete(c.configGroups, key)
 	return nil
