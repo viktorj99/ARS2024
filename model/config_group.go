@@ -1,9 +1,14 @@
 package model
 
 type ConfigGroup struct {
-	Name           string
-	Version        string
-	Configurations []Config
+	Name           string   `json:"name"`
+	Version        int      `json:"version"`
+	Configurations []Config `json:"config"`
 }
 
-//atributi: naziv, verzija, konfiguracije(lista)
+type ConfigGroupRepository interface {
+	AddConfigGroup(configGroup ConfigGroup)
+	GetConfigGroup(name string, version int) (ConfigGroup, error)
+	DeleteConfigGroup(name string, version int) error
+	AddConfigToGroup(name string, version int, config Config) error
+}
