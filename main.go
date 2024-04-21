@@ -1,11 +1,16 @@
 package main
 
 import (
+	"context"
+	"log"
 	"net/http"
+	"os"
+	"os/signal"
 	"projekat/handlers"
 	"projekat/model"
 	"projekat/repository"
 	"projekat/service"
+	"time"
 
 	"github.com/gorilla/mux"
 )
@@ -52,5 +57,27 @@ func main() {
 	router.HandleFunc("/configGroups/{name}/{version}", handlerConfigGroup.DeleteConfigGroup).Methods("DELETE")
 	router.HandleFunc("/configGroups/{name}/{version}", handlerConfigGroup.AddConfigToGroup).Methods("POST")
 
-	http.ListenAndServe("localhost:8000", router)
+	server := &http.Server{
+		Addr:    "localhost:8000",
+		Handler: router,
+	}
+
+	stop := make(chan os.Signal, 1)
+	signal.Notify(stop, os.Interrupt)
+
+	go func() {
+		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatal(err)
+		}
+	}()
+
+	<-stop
+	signal.Stop(stop)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+
+	if err := server.Shutdown(ctx); err != nil {
+		log.Fatal(err)
+	}
 }
