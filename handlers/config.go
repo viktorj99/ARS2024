@@ -7,7 +7,6 @@ import (
 	"projekat/model"
 	"projekat/service"
 	"strconv"
-	"time"
 
 	"github.com/gorilla/mux"
 )
@@ -43,6 +42,13 @@ func (c ConfigHandler) AddConfig(writer http.ResponseWriter, request *http.Reque
 		fmt.Fprintf(writer, "Error: 'version' field is required and cannot be zero")
 		return
 	}
+
+	_, exists := c.service.GetConfig(config.Name, config.Version)
+	if exists == nil {
+		http.Error(writer, "Configuration with the given name and version already exists", http.StatusConflict)
+		return
+	}
+
 	if len(config.Parameters) == 0 {
 		fmt.Fprintf(writer, "Error: 'params' field is required and cannot be empty")
 		return
@@ -54,7 +60,7 @@ func (c ConfigHandler) AddConfig(writer http.ResponseWriter, request *http.Reque
 
 // GET /configs/{name}/{version}
 func (c ConfigHandler) GetConfig(writer http.ResponseWriter, request *http.Request) {
-	time.Sleep(10 * time.Second)
+	// time.Sleep(10 * time.Second)
 	name := mux.Vars(request)["name"]
 	version := mux.Vars(request)["version"]
 

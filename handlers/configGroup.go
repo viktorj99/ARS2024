@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"projekat/model"
+	"projekat/repository"
 	"projekat/service"
 	"strconv"
 
@@ -72,8 +73,28 @@ func (c ConfigGroupHandler) AddConfigGroup(writer http.ResponseWriter, request *
 		return
 	}
 	if len(configGroup.Configurations) == 0 {
-		fmt.Fprintf(writer, "Error: 'params' field is required and cannot be empty")
+		fmt.Fprintf(writer, "Error: 'config' field is required and cannot be empty")
 		return
+	}
+
+	// new_config_group, err := c.service.GetConfigGroup(configGroup.Name, configGroup.Version)
+	// if err == nil {
+	// 	http.Error(writer, "Configuration group with the given name and version already exists", http.StatusConflict)
+	// 	return
+	// }
+
+	configList := configGroup.Configurations
+	configRepo := repository.NewConfigInMemRepository()
+	configService := service.NewConfigService(configRepo)
+	for i := 0; i < len(configList); i++ {
+		fmt.Printf("Checking config: Name='%s', Version=%d\n", configList[i].Name, configList[i].Version)
+		_, err := configService.GetConfig(configList[i].Name, configList[i].Version)
+		if err != nil {
+			fmt.Println("Error:", err)
+			fmt.Println("Adding config since it was not found:")
+			fmt.Printf("Name='%s', Version=%d, Parameters=%v\n", configList[i].Name, configList[i].Version, configList[i].Parameters)
+			configService.AddConfig(configList[i])
+		}
 	}
 
 	c.service.AddConfigGroup(configGroup)

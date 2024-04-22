@@ -1,0 +1,192 @@
+{
+	"info": {
+		"_postman_id": "d08fdb9c-a991-4f67-bda3-6cf423be9a9f",
+		"name": "Go project",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "34018922"
+	},
+	"item": [
+		{
+			"name": "GetConfig",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "GET",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8000/configs/viktorova/2",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8000",
+					"path": [
+						"configs",
+						"viktorova",
+						"2"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "AddConfig",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"name\" : \"db_testConfig\",\r\n    \"version\" : 2,\r\n    \"params\" : {\"username\" : \"dimitrije\", \"port\" : \"210\"}\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8000/configs",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8000",
+					"path": [
+						"configs"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "DeleteConfig",
+			"request": {
+				"method": "DELETE",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8000/configs/viktorova/2",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8000",
+					"path": [
+						"configs",
+						"viktorova",
+						"2"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "GetConfigGroup",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8000/configGroups/momirova/2",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8000",
+					"path": [
+						"configGroups",
+						"momirova",
+						"2"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "AddConfigGroup",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"name\" : \"db_newConfigGroup\",\r\n    \"version\" : 4,\r\n    \"config\" : [{\"name\" : \"kum\", \"version\" : 24}]\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8000/configGroups",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8000",
+					"path": [
+						"configGroups"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "DeleteConfigGroup",
+			"request": {
+				"method": "DELETE",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8000/configGroups/momirova/2",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8000",
+					"path": [
+						"configGroups",
+						"momirova",
+						"2"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "AddConfigToGroup",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"name\" : \"stovlina\",\r\n    \"version\" : 2,\r\n    \"params\" : {\r\n        \"username\": \"stovlic\",\r\n        \"port\": \"555333\"\r\n    }\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8000/configGroups/momirova/2",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8000",
+					"path": [
+						"configGroups",
+						"momirova",
+						"2"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}
