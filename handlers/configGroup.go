@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/http"
 	"projekat/model"
-	"projekat/repository"
 	"projekat/service"
 	"strconv"
 
@@ -14,13 +13,15 @@ import (
 
 // Klasa
 type ConfigGroupHandler struct {
-	service service.ConfigGroupService
+	configGroupservice service.ConfigGroupService
+	configService service.ConfigService
 }
 
 // Konstruktor
-func NewConfigGroupHandler(service service.ConfigGroupService) ConfigGroupHandler {
+func NewConfigGroupHandler(configGroupservice service.ConfigGroupService, configService service.ConfigService) ConfigGroupHandler {
 	return ConfigGroupHandler{
-		service: service,
+		configGroupservice: configGroupservice,
+		configService: configService,
 	}
 }
 
@@ -36,7 +37,7 @@ func (c ConfigGroupHandler) GetConfigGroup(writer http.ResponseWriter, request *
 	}
 
 	// pozovi servis metodu
-	config, err := c.service.GetConfigGroup(name, versionInt)
+	config, err := c.configGroupservice.GetConfigGroup(name, versionInt)
 	if err != nil {
 		http.Error(writer, err.Error(), http.StatusNotFound)
 		return
@@ -77,28 +78,14 @@ func (c ConfigGroupHandler) AddConfigGroup(writer http.ResponseWriter, request *
 		return
 	}
 
-	// new_config_group, err := c.service.GetConfigGroup(configGroup.Name, configGroup.Version)
-	// if err == nil {
-	// 	http.Error(writer, "Configuration group with the given name and version already exists", http.StatusConflict)
-	// 	return
-	// }
-
 	configList := configGroup.Configurations
-	configRepo := repository.NewConfigInMemRepository()
-	configService := service.NewConfigService(configRepo)
 	for i := 0; i < len(configList); i++ {
-		fmt.Printf("Checking config: Name='%s', Version=%d\n", configList[i].Name, configList[i].Version)
-		_, err := configService.GetConfig(configList[i].Name, configList[i].Version)
+		_, err := c.configService.GetConfig(configList[i].Name, configList[i].Version)
 		if err != nil {
-			fmt.Println("Error:", err)
-			fmt.Println("Adding config since it was not found:")
-			fmt.Printf("Name='%s', Version=%d, Parameters=%v\n", configList[i].Name, configList[i].Version, configList[i].Parameters)
-			configService.AddConfig(configList[i])
+			c.configService.AddConfig(configList[i])
 		}
 	}
-
-	c.service.AddConfigGroup(configGroup)
-	fmt.Fprintf(writer, "Received config: %+v", configGroup)
+	c.configGroupservice.AddConfigGroup(configGroup)
 }
 
 func (c ConfigGroupHandler) DeleteConfigGroup(writer http.ResponseWriter, request *http.Request) {
@@ -110,7 +97,7 @@ func (c ConfigGroupHandler) DeleteConfigGroup(writer http.ResponseWriter, reques
 		http.Error(writer, err.Error(), http.StatusBadRequest)
 		return
 	}
-	err = c.service.DeleteConfigGroup(name, versionInt)
+	err = c.configGroupservice.DeleteConfigGroup(name, versionInt)
 	if err != nil {
 		http.Error(writer, err.Error(), http.StatusNotFound)
 		return
@@ -136,7 +123,7 @@ func (c ConfigGroupHandler) AddConfigToGroup(writer http.ResponseWriter, request
 		return
 	}
 
-	_, err = c.service.GetConfigGroup(name, versionInt)
+	_, err = c.configGroupservice.GetConfigGroup(name, versionInt)
 	if err != nil {
 		http.Error(writer, err.Error(), http.StatusNotFound)
 		return
@@ -163,6 +150,6 @@ func (c ConfigGroupHandler) AddConfigToGroup(writer http.ResponseWriter, request
 		return
 	}
 
-	c.service.AddConfigToGroup(name, versionInt, config)
+	c.configGroupservice.AddConfigToGroup(name, versionInt, config)
 	fmt.Fprintf(writer, "Received config: %+v", config)
 }

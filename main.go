@@ -44,7 +44,7 @@ func main() {
 	serviceConfigGroup.AddConfigGroup(configGroup)
 
 	handlerConfig := handlers.NewConfigHandler(serviceConfig)
-	handlerConfigGroup := handlers.NewConfigGroupHandler(serviceConfigGroup)
+	handlerConfigGroup := handlers.NewConfigGroupHandler(serviceConfigGroup, serviceConfig)
 
 	router := mux.NewRouter()
 
