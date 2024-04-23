@@ -163,6 +163,7 @@ func (c ConfigGroupHandler) AddConfigToGroup(writer http.ResponseWriter, request
 		}
 	}
 
+	c.configService.AddConfig(config)
 	c.configGroupservice.AddConfigToGroup(name, versionInt, config)
 	fmt.Fprintf(writer, "Received config: %+v", config)
 }
