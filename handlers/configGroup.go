@@ -14,14 +14,14 @@ import (
 // Klasa
 type ConfigGroupHandler struct {
 	configGroupservice service.ConfigGroupService
-	configService service.ConfigService
+	configService      service.ConfigService
 }
 
 // Konstruktor
 func NewConfigGroupHandler(configGroupservice service.ConfigGroupService, configService service.ConfigService) ConfigGroupHandler {
 	return ConfigGroupHandler{
 		configGroupservice: configGroupservice,
-		configService: configService,
+		configService:      configService,
 	}
 }
 
@@ -86,6 +86,7 @@ func (c ConfigGroupHandler) AddConfigGroup(writer http.ResponseWriter, request *
 		}
 	}
 	c.configGroupservice.AddConfigGroup(configGroup)
+	fmt.Fprintf(writer, "Received config: %+v", configGroup)
 }
 
 func (c ConfigGroupHandler) DeleteConfigGroup(writer http.ResponseWriter, request *http.Request) {
@@ -150,6 +151,49 @@ func (c ConfigGroupHandler) AddConfigToGroup(writer http.ResponseWriter, request
 		return
 	}
 
+	group, err := c.configGroupservice.GetConfigGroup(name, versionInt)
+	if err != nil {
+		http.Error(writer, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	for _, c := range group.Configurations {
+		if c.Name == config.Name && c.Version == config.Version {
+			http.Error(writer, "Configuration already exists in the group", http.StatusBadRequest)
+			return
+		}
+	}
+
 	c.configGroupservice.AddConfigToGroup(name, versionInt, config)
 	fmt.Fprintf(writer, "Received config: %+v", config)
+}
+
+func (c ConfigGroupHandler) DeleteConfigFromGroup(writer http.ResponseWriter, request *http.Request) {
+	groupName := mux.Vars(request)["groupName"]
+	groupVersion := mux.Vars(request)["groupVersion"]
+	configName := mux.Vars(request)["configName"]
+	configVersion := mux.Vars(request)["configVersion"]
+
+	groupVersionInt, err := strconv.Atoi(groupVersion)
+	if err != nil {
+		http.Error(writer, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	configVersionInt, err := strconv.Atoi(configVersion)
+	if err != nil {
+		http.Error(writer, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	err = c.configGroupservice.DeleteConfigFromGroup(groupName, groupVersionInt, configName, configVersionInt)
+	if err != nil {
+		http.Error(writer, err.Error(), http.StatusNotFound)
+		return
+	}
+
+	response := map[string]string{"message": "Configuration successfully deleted"}
+	jsonResponse, _ := json.Marshal(response)
+	writer.Header().Set("Content-Type", "application/json")
+	writer.WriteHeader(http.StatusOK)
+	writer.Write(jsonResponse)
 }

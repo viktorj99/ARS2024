@@ -30,3 +30,7 @@ func (s ConfigGroupService) DeleteConfigGroup(name string, version int) error {
 func (s ConfigGroupService) AddConfigToGroup(name string, version int, config model.Config) error {
 	return s.repository.AddConfigToGroup(name, version, config)
 }
+
+func (s ConfigGroupService) DeleteConfigFromGroup(groupName string, groupVersion int, configName string, configVersion int) error {
+	return s.repository.DeleteConfigFromGroup(groupName, groupVersion, configName, configVersion)
+}

@@ -51,3 +51,29 @@ func (c ConfigGroupInMemRepository) AddConfigToGroup(name string, version int, c
 	c.configGroups[key] = group
 	return nil
 }
+
+func (c ConfigGroupInMemRepository) DeleteConfigFromGroup(groupName string, groupVersion int, configName string, configVersion int) error {
+	groupKey := fmt.Sprintf("%s/%d", groupName, groupVersion)
+	group, ok := c.configGroups[groupKey]
+	if !ok {
+		return fmt.Errorf("config group not found")
+	}
+
+	// Check if config exists in group.Configurations
+	configFound := false
+	for i, config := range group.Configurations {
+		if config.Name == configName && config.Version == configVersion {
+			// Remove the config from group.Configurations
+			group.Configurations = append(group.Configurations[:i], group.Configurations[i+1:]...)
+			configFound = true
+			break
+		}
+	}
+
+	if !configFound {
+		return fmt.Errorf("config not found")
+	}
+
+	c.configGroups[groupKey] = group
+	return nil
+}
