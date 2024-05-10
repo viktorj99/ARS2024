@@ -150,6 +150,10 @@ func (c ConfigGroupHandler) AddConfigToGroup(writer http.ResponseWriter, request
 		fmt.Fprintf(writer, "Error: 'params' field is required and cannot be empty")
 		return
 	}
+	if len(config.Labels) == 0 {
+		fmt.Fprintf(writer, "Error: 'labels' field is required and cannot be empty")
+		return
+	}
 
 	group, err := c.configGroupservice.GetConfigGroup(name, versionInt)
 	if err != nil {

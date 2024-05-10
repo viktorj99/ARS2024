@@ -54,6 +54,11 @@ func (c ConfigHandler) AddConfig(writer http.ResponseWriter, request *http.Reque
 		return
 	}
 
+	if len(config.Labels) == 0 {
+		fmt.Fprintf(writer, "Error: 'labels' field is required and cannot be empty")
+		return
+	}
+
 	c.service.AddConfig(config)
 	fmt.Fprintf(writer, "Received config: %+v", config)
 }
