@@ -219,3 +219,24 @@ func (c ConfigGroupHandler) GetConfigsFromGroupByLabels(w http.ResponseWriter, r
 
 	json.NewEncoder(w).Encode(configs)
 }
+
+func (c ConfigGroupHandler) DeleteConfigsFromGroupByLabels(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	groupName := params["groupName"]
+	groupVersionStr := params["groupVersion"]
+	labels := params["labels"]
+
+	groupVersion, err := strconv.Atoi(groupVersionStr)
+	if err != nil {
+		http.Error(w, "Invalid group version", http.StatusBadRequest)
+		return
+	}
+
+	err = c.configGroupservice.DeleteConfigsFromGroupByLabel(groupName, groupVersion, labels)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusNotFound)
+		return
+	}
+
+	fmt.Fprint(w, "Configuration deleted successfully")
+}

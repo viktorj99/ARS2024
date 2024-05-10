@@ -112,9 +112,39 @@ func (c ConfigGroupInMemRepository) GetConfigsFromGroupByLabel(groupName string,
 	return result, nil
 }
 
-// DeleteConfigFromGroupByLabel implements model.ConfigGroupRepository.
 func (c ConfigGroupInMemRepository) DeleteConfigsFromGroupByLabel(groupName string, groupVersion int, labels string) error {
-	panic("unimplemented")
+	labelMap := make(map[string]string)
+	labelPairs := strings.Split(labels, ";")
+	for _, pair := range labelPairs {
+		parts := strings.Split(pair, ":")
+		if len(parts) != 2 {
+			return errors.New("invalid label format")
+		}
+		labelMap[parts[0]] = parts[1]
+	}
+
+	groupKey := fmt.Sprintf("%s/%d", groupName, groupVersion)
+	group, ok := c.configGroups[groupKey]
+	if !ok {
+		return errors.New("config group not found")
+	}
+
+	found := false
+	for _, config := range group.Configurations {
+		if labelMapsAreEqual(labelMap, config.Labels) {
+			err := c.DeleteConfigFromGroup(groupName, groupVersion, config.Name, config.Version)
+			if err != nil {
+				return err
+			}
+			found = true
+		}
+	}
+
+	if !found {
+		return errors.New("config not found")
+	}
+
+	return nil
 }
 
 func labelMapsAreEqual(map1, map2 map[string]string) bool {

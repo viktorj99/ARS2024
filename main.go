@@ -64,6 +64,7 @@ func main() {
 	router.HandleFunc("/configGroups/{name}/{version}", handlerConfigGroup.AddConfigToGroup).Methods("POST")
 	router.HandleFunc("/configGroups/{groupName}/{groupVersion}/{configName}/{configVersion}", handlerConfigGroup.DeleteConfigFromGroup).Methods("DELETE")
 	router.HandleFunc("/configGroups/{groupName}/{groupVersion}/{labels}", handlerConfigGroup.GetConfigsFromGroupByLabels).Methods("GET")
+	router.HandleFunc("/configGroups/{groupName}/{groupVersion}/{labels}", handlerConfigGroup.DeleteConfigsFromGroupByLabels).Methods("DELETE")
 
 	server := &http.Server{
 		Addr:    "localhost:8000",

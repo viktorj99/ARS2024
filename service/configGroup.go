@@ -38,3 +38,7 @@ func (s ConfigGroupService) DeleteConfigFromGroup(groupName string, groupVersion
 func (s ConfigGroupService) GetConfigsFromGroupByLabel(groupName string, groupVersion int, labels string) ([]model.Config, error) {
 	return s.repository.GetConfigsFromGroupByLabel(groupName, groupVersion, labels)
 }
+
+func (s ConfigGroupService) DeleteConfigsFromGroupByLabel(groupName string, groupVersion int, labels string) error {
+	return s.repository.DeleteConfigsFromGroupByLabel(groupName, groupVersion, labels)
+}
