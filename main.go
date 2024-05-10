@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
+	"golang.org/x/time/rate"
 )
 
 func main() {
@@ -54,17 +55,19 @@ func main() {
 
 	router := mux.NewRouter()
 
-	router.HandleFunc("/configs/{name}/{version}", handlerConfig.GetConfig).Methods("GET")
-	router.HandleFunc("/configs", handlerConfig.AddConfig).Methods("POST")
-	router.HandleFunc("/configs/{name}/{version}", handlerConfig.DeleteConfig).Methods("DELETE")
+	limiter := rate.NewLimiter(0.167, 10)
 
-	router.HandleFunc("/configGroups/{name}/{version}", handlerConfigGroup.GetConfigGroup).Methods("GET")
-	router.HandleFunc("/configGroups", handlerConfigGroup.AddConfigGroup).Methods("POST")
-	router.HandleFunc("/configGroups/{name}/{version}", handlerConfigGroup.DeleteConfigGroup).Methods("DELETE")
-	router.HandleFunc("/configGroups/{name}/{version}", handlerConfigGroup.AddConfigToGroup).Methods("POST")
-	router.HandleFunc("/configGroups/{groupName}/{groupVersion}/{configName}/{configVersion}", handlerConfigGroup.DeleteConfigFromGroup).Methods("DELETE")
-	router.HandleFunc("/configGroups/{groupName}/{groupVersion}/{labels}", handlerConfigGroup.GetConfigsFromGroupByLabels).Methods("GET")
-	router.HandleFunc("/configGroups/{groupName}/{groupVersion}/{labels}", handlerConfigGroup.DeleteConfigsFromGroupByLabels).Methods("DELETE")
+	router.Handle("/configs/{name}/{version}", handlers.RateLimit(limiter, http.HandlerFunc(handlerConfig.GetConfig))).Methods("GET")
+	router.Handle("/configs", handlers.RateLimit(limiter, http.HandlerFunc(handlerConfig.AddConfig))).Methods("POST")
+	router.Handle("/configs/{name}/{version}", handlers.RateLimit(limiter, http.HandlerFunc(handlerConfig.DeleteConfig))).Methods("DELETE")
+
+	router.Handle("/configGroups/{name}/{version}", handlers.RateLimit(limiter, http.HandlerFunc(handlerConfigGroup.GetConfigGroup))).Methods("GET")
+	router.Handle("/configGroups", handlers.RateLimit(limiter, http.HandlerFunc(handlerConfigGroup.AddConfigGroup))).Methods("POST")
+	router.Handle("/configGroups/{name}/{version}", handlers.RateLimit(limiter, http.HandlerFunc(handlerConfigGroup.DeleteConfigGroup))).Methods("DELETE")
+	router.Handle("/configGroups/{name}/{version}", handlers.RateLimit(limiter, http.HandlerFunc(handlerConfigGroup.AddConfigToGroup))).Methods("POST")
+	router.Handle("/configGroups/{groupName}/{groupVersion}/{configName}/{configVersion}", handlers.RateLimit(limiter, http.HandlerFunc(handlerConfigGroup.DeleteConfigFromGroup))).Methods("DELETE")
+	router.Handle("/configGroups/{groupName}/{groupVersion}/{labels}", handlers.RateLimit(limiter, http.HandlerFunc(handlerConfigGroup.GetConfigsFromGroupByLabels))).Methods("GET")
+	router.Handle("/configGroups/{groupName}/{groupVersion}/{labels}", handlers.RateLimit(limiter, http.HandlerFunc(handlerConfigGroup.DeleteConfigsFromGroupByLabels))).Methods("DELETE")
 
 	server := &http.Server{
 		Addr:    "localhost:8000",
