@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"projekat/model"
+	"strings"
 )
 
 type ConfigGroupInMemRepository struct {
@@ -34,7 +35,7 @@ func (c ConfigGroupInMemRepository) GetConfigGroup(name string, version int) (mo
 func (c ConfigGroupInMemRepository) DeleteConfigGroup(name string, version int) error {
 	key := fmt.Sprintf("%s/%d", name, version)
 	if _, exists := c.configGroups[key]; !exists {
-		return fmt.Errorf("config not found!")
+		return fmt.Errorf("config not found")
 	}
 	delete(c.configGroups, key)
 	return nil
@@ -76,4 +77,54 @@ func (c ConfigGroupInMemRepository) DeleteConfigFromGroup(groupName string, grou
 
 	c.configGroups[groupKey] = group
 	return nil
+}
+
+func (c ConfigGroupInMemRepository) GetConfigsFromGroupByLabel(groupName string, groupVersion int, labels string) ([]model.Config, error) {
+	labelMap := make(map[string]string)
+	labelPairs := strings.Split(labels, ";")
+
+	for _, pair := range labelPairs {
+		parts := strings.Split(pair, ":")
+		if len(parts) != 2 {
+			return nil, errors.New("invalid label format")
+		}
+		labelMap[parts[0]] = parts[1]
+	}
+
+	key := fmt.Sprintf("%s/%d", groupName, groupVersion)
+	configGroup, ok := c.configGroups[key]
+	if !ok {
+		return nil, errors.New("config group not found")
+	}
+
+	var result []model.Config
+
+	for _, config := range configGroup.Configurations {
+		if labelMapsAreEqual(labelMap, config.Labels) {
+			result = append(result, config)
+		}
+	}
+
+	if result == nil {
+		return nil, errors.New("config not found")
+	}
+
+	return result, nil
+}
+
+// DeleteConfigFromGroupByLabel implements model.ConfigGroupRepository.
+func (c ConfigGroupInMemRepository) DeleteConfigsFromGroupByLabel(groupName string, groupVersion int, labels string) error {
+	panic("unimplemented")
+}
+
+func labelMapsAreEqual(map1, map2 map[string]string) bool {
+	if len(map1) != len(map2) {
+		return false
+	}
+	for key, value := range map1 {
+		if map2[key] != value {
+			return false
+		}
+	}
+	return true
 }

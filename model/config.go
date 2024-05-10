@@ -4,6 +4,7 @@ type Config struct {
 	Name       string            `json:"name"`
 	Version    int               `json:"version"`
 	Parameters map[string]string `json:"params"`
+	Labels     map[string]string `json:"labels"`
 }
 
 type ConfigRepository interface {
