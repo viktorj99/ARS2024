@@ -15,8 +15,8 @@ func NewConfigGroupService(repository model.ConfigGroupRepository) ConfigGroupSe
 	}
 }
 
-func (s ConfigGroupService) AddConfigGroup(config model.ConfigGroup) {
-	s.repository.AddConfigGroup(config)
+func (s ConfigGroupService) AddConfigGroup(config model.ConfigGroup) error {
+	return s.repository.AddConfigGroup(config)
 }
 
 func (s ConfigGroupService) GetConfigGroup(name string, version int) (model.ConfigGroup, error) {

@@ -7,7 +7,6 @@ import (
 	"os"
 	"os/signal"
 	"projekat/handlers"
-	"projekat/model"
 	"projekat/repository"
 	"projekat/service"
 	"time"
@@ -17,38 +16,45 @@ import (
 )
 
 func main() {
-	repo := repository.NewConfigInMemRepository()
-	repoGroup := repository.NewConfigGroupInMemRepository()
+	repo, err := repository.NewConfigConsulRepository()
+	if err != nil {
+		log.Fatalf("Failed to create Consul repository: %v", err)
+	}
+
+	repoGroup, err := repository.NewConfigGroupConsulRepository()
+	if err != nil {
+		log.Fatalf("Failed to create Consul repository: %v", err)
+	}
 
 	serviceConfig := service.NewConfigService(repo)
 	serviceConfigGroup := service.NewConfigGroupService(repoGroup)
 
-	params := make(map[string]string)
-	params["username"] = "pera"
-	params["port"] = "5432"
+	// params := make(map[string]string)
+	// params["username"] = "pera"
+	// params["port"] = "5432"
 
-	labels := make(map[string]string)
-	labels["l1"] = "v1"
-	labels["l2"] = "v2"
+	// labels := make(map[string]string)
+	// labels["l1"] = "v1"
+	// labels["l2"] = "v2"
 
-	config := model.Config{
-		Name:       "viktorova",
-		Version:    2,
-		Parameters: params,
-		Labels:     labels,
-	}
+	// config := model.Config{
+	// 	Name:       "viktorova",
+	// 	Version:    2,
+	// 	Parameters: params,
+	// 	Labels:     labels,
+	// }
 
-	configs := []model.Config{}
-	configs = append(configs, config)
+	// configs := []model.Config{}
+	// configs = append(configs, config)
 
-	configGroup := model.ConfigGroup{
-		Name:           "momirova",
-		Version:        2,
-		Configurations: configs,
-	}
+	// configGroup := model.ConfigGroup{
+	// 	Name:           "momirova",
+	// 	Version:        2,
+	// 	Configurations: configs,
+	// }
 
-	serviceConfig.AddConfig(config)
-	serviceConfigGroup.AddConfigGroup(configGroup)
+	// serviceConfig.AddConfig(config)
+	// serviceConfigGroup.AddConfigGroup(configGroup)
 
 	handlerConfig := handlers.NewConfigHandler(serviceConfig)
 	handlerConfigGroup := handlers.NewConfigGroupHandler(serviceConfigGroup, serviceConfig)

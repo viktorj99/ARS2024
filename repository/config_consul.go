@@ -1,35 +1,60 @@
 package repository
 
-// import "projekat/model"
+import (
+	"encoding/json"
+	"fmt"
+	"projekat/model"
 
-// type ConfigConsulRepository struct {
-// }
+	"github.com/hashicorp/consul/api"
+)
 
-// func (c ConfigConsulRepository) AddConfig(config model.Config) error {
-// 	//TODO implement me
-// 	panic("implement me")
-// }
+type ConfigConsulRepository struct {
+	client *api.Client
+}
 
-// func (c ConfigConsulRepository) DeleteConfig(name string, version string) error {
-// 	//TODO implement me
-// 	panic("implement me")
-// }
+func NewConfigConsulRepository() (*ConfigConsulRepository, error) {
+	client, err := api.NewClient(api.DefaultConfig())
+	if err != nil {
+		return nil, err
+	}
+	return &ConfigConsulRepository{client: client}, nil
+}
 
-// func (c ConfigConsulRepository) UpdateConfig(name string, version string, config model.Config) error {
-// 	//TODO implement me
-// 	panic("implement me")
-// }
+func (r *ConfigConsulRepository) AddConfig(config model.Config) error {
+	kv := r.client.KV()
+	data, err := json.Marshal(config)
+	if err != nil {
+		return err
+	}
+	p := &api.KVPair{
+		Key:   fmt.Sprintf("config/%s/%d", config.Name, config.Version),
+		Value: data,
+	}
+	_, err = kv.Put(p, nil)
+	return err
+}
 
-// func (c ConfigConsulRepository) ListConfigs() ([]model.Config, error) {
-// 	//TODO implement me
-// 	panic("implement me")
-// }
+func (r *ConfigConsulRepository) GetConfig(name string, version int) (model.Config, error) {
+	kv := r.client.KV()
+	key := fmt.Sprintf("config/%s/%d", name, version)
+	pair, _, err := kv.Get(key, nil)
+	if err != nil {
+		return model.Config{}, err
+	}
+	if pair == nil {
+		return model.Config{}, fmt.Errorf("config not found")
+	}
+	var config model.Config
+	err = json.Unmarshal(pair.Value, &config)
+	if err != nil {
+		return model.Config{}, err
+	}
+	return config, nil
+}
 
-// func (c ConfigConsulRepository) FindConfigByNameAndVersion(name string, version string) (*model.Config, error) {
-// 	//TODO implement me
-// 	panic("implement me")
-// }
-
-// func NewConfigConsulRepository() model.ConfigRepository {
-// 	return ConfigConsulRepository{}
-// }
+func (r *ConfigConsulRepository) DeleteConfig(name string, version int) error {
+	kv := r.client.KV()
+	key := fmt.Sprintf("config/%s/%d", name, version)
+	_, err := kv.Delete(key, nil)
+	return err
+}

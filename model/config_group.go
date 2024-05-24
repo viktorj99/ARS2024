@@ -7,7 +7,7 @@ type ConfigGroup struct {
 }
 
 type ConfigGroupRepository interface {
-	AddConfigGroup(configGroup ConfigGroup)
+	AddConfigGroup(configGroup ConfigGroup) error
 	GetConfigGroup(name string, version int) (ConfigGroup, error)
 	DeleteConfigGroup(name string, version int) error
 	AddConfigToGroup(name string, version int, config Config) error

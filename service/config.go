@@ -15,8 +15,8 @@ func NewConfigService(repository model.ConfigRepository) ConfigService {
 	}
 }
 
-func (s ConfigService) AddConfig(config model.Config) {
-	s.repository.AddConfig(config)
+func (s ConfigService) AddConfig(config model.Config) error {
+	return s.repository.AddConfig(config)
 }
 
 func (s ConfigService) GetConfig(name string, version int) (model.Config, error) {
