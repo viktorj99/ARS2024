@@ -27,8 +27,8 @@ RUN apk --no-cache add ca-certificates
 # Copy the binary from the builder stage
 COPY --from=builder /projekat .
 
-# Make port 8000 available to the outside world
-EXPOSE 8000
+# Make port 8080 available to the outside world
+EXPOSE 8080
 
 # Run the binary
 CMD ["./projekat"]

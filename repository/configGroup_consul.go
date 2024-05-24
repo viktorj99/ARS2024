@@ -3,7 +3,9 @@ package repository
 import (
 	"encoding/json"
 	"fmt"
+	"os"
 	"projekat/model"
+	"strings"
 
 	"github.com/hashicorp/consul/api"
 )
@@ -14,7 +16,11 @@ type ConfigGroupConsulRepository struct {
 
 // Constructor to create a new ConfigGroupConsulRepository
 func NewConfigGroupConsulRepository() (*ConfigGroupConsulRepository, error) {
-	client, err := api.NewClient(api.DefaultConfig())
+	consulAddress := fmt.Sprintf("%s:%s", os.Getenv("DB"), os.Getenv("DBPORT"))
+	config := api.DefaultConfig()
+	config.Address = consulAddress
+
+	client, err := api.NewClient(config)
 	if err != nil {
 		return nil, err
 	}
@@ -84,40 +90,79 @@ func (r *ConfigGroupConsulRepository) DeleteConfigFromGroup(groupName string, gr
 }
 
 func (r *ConfigGroupConsulRepository) GetConfigsFromGroupByLabel(groupName string, groupVersion int, labels string) ([]model.Config, error) {
+	labelMap := make(map[string]string)
+	labelPairs := strings.Split(labels, ";")
+
+	for _, pair := range labelPairs {
+		parts := strings.Split(pair, ":")
+		if len(parts) != 2 {
+			return nil, fmt.Errorf("invalid label format")
+		}
+		labelMap[parts[0]] = parts[1]
+	}
+
 	configGroup, err := r.GetConfigGroup(groupName, groupVersion)
 	if err != nil {
 		return nil, err
 	}
+
 	var configs []model.Config
 	for _, config := range configGroup.Configurations {
-		for k := range config.Labels {
-			if k == labels {
-				configs = append(configs, config)
-				break
-			}
+		if labelMapsAreEqual(labelMap, config.Labels) {
+			configs = append(configs, config)
 		}
 	}
+
+	if len(configs) == 0 {
+		return nil, fmt.Errorf("config not found")
+	}
+
 	return configs, nil
 }
 
 func (r *ConfigGroupConsulRepository) DeleteConfigsFromGroupByLabel(groupName string, groupVersion int, labels string) error {
+	labelMap := make(map[string]string)
+	labelPairs := strings.Split(labels, ";")
+
+	for _, pair := range labelPairs {
+		parts := strings.Split(pair, ":")
+		if len(parts) != 2 {
+			return fmt.Errorf("invalid label format")
+		}
+		labelMap[parts[0]] = parts[1]
+	}
+
 	configGroup, err := r.GetConfigGroup(groupName, groupVersion)
 	if err != nil {
 		return err
 	}
-	var configs []model.Config
+
+	var updatedConfigs []model.Config
+	found := false
 	for _, config := range configGroup.Configurations {
-		keep := true
-		for k := range config.Labels {
-			if k == labels {
-				keep = false
-				break
-			}
-		}
-		if keep {
-			configs = append(configs, config)
+		if labelMapsAreEqual(labelMap, config.Labels) {
+			found = true
+		} else {
+			updatedConfigs = append(updatedConfigs, config)
 		}
 	}
-	configGroup.Configurations = configs
+
+	if !found {
+		return fmt.Errorf("config not found")
+	}
+
+	configGroup.Configurations = updatedConfigs
 	return r.AddConfigGroup(configGroup)
+}
+
+func labelMapsAreEqual(map1, map2 map[string]string) bool {
+	if len(map1) != len(map2) {
+		return false
+	}
+	for key, value := range map1 {
+		if map2[key] != value {
+			return false
+		}
+	}
+	return true
 }

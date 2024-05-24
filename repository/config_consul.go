@@ -3,6 +3,7 @@ package repository
 import (
 	"encoding/json"
 	"fmt"
+	"os"
 	"projekat/model"
 
 	"github.com/hashicorp/consul/api"
@@ -13,7 +14,11 @@ type ConfigConsulRepository struct {
 }
 
 func NewConfigConsulRepository() (*ConfigConsulRepository, error) {
-	client, err := api.NewClient(api.DefaultConfig())
+	consulAddress := fmt.Sprintf("%s:%s", os.Getenv("DB"), os.Getenv("DBPORT"))
+	config := api.DefaultConfig()
+	config.Address = consulAddress
+
+	client, err := api.NewClient(config)
 	if err != nil {
 		return nil, err
 	}

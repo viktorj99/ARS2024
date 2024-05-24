@@ -76,7 +76,7 @@ func main() {
 	router.Handle("/configGroups/{groupName}/{groupVersion}/{labels}", handlers.RateLimit(limiter, http.HandlerFunc(handlerConfigGroup.DeleteConfigsFromGroupByLabels))).Methods("DELETE")
 
 	server := &http.Server{
-		Addr:    "0.0.0.0:8000",
+		Addr:    "0.0.0.0:8080",
 		Handler: router,
 	}
 
