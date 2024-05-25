@@ -62,8 +62,21 @@ func (r *ConfigGroupConsulRepository) GetConfigGroup(name string, version int) (
 func (r *ConfigGroupConsulRepository) DeleteConfigGroup(name string, version int) error {
 	kv := r.client.KV()
 	key := fmt.Sprintf("configgroup/%s/%d", name, version)
-	_, err := kv.Delete(key, nil)
-	return err
+
+	pair, _, err := kv.Get(key, nil)
+	if err != nil {
+		return fmt.Errorf("error checking config group: %v", err)
+	}
+	if pair == nil {
+		return fmt.Errorf("config group not found")
+	}
+
+	_, err = kv.Delete(key, nil)
+	if err != nil {
+		return fmt.Errorf("error deleting config group: %v", err)
+	}
+
+	return nil
 }
 
 func (r *ConfigGroupConsulRepository) AddConfigToGroup(name string, version int, config model.Config) error {

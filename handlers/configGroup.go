@@ -95,20 +95,26 @@ func (c ConfigGroupHandler) DeleteConfigGroup(writer http.ResponseWriter, reques
 
 	versionInt, err := strconv.Atoi(version)
 	if err != nil {
-		http.Error(writer, err.Error(), http.StatusBadRequest)
-		return
-	}
-	err = c.configGroupservice.DeleteConfigGroup(name, versionInt)
-	if err != nil {
-		http.Error(writer, err.Error(), http.StatusNotFound)
+		http.Error(writer, "Invalid version format", http.StatusBadRequest)
 		return
 	}
 
-	response := map[string]string{"message": "Configuration successfully deleted"}
-	jsonResponse, _ := json.Marshal(response)
+	err = c.configGroupservice.DeleteConfigGroup(name, versionInt)
+	if err != nil {
+		if err.Error() == "config group not found" {
+			http.Error(writer, err.Error(), http.StatusNotFound)
+		} else {
+			http.Error(writer, "Internal Server Error", http.StatusInternalServerError)
+		}
+		return
+	}
+
+	response := map[string]string{"message": "Configuration group successfully deleted"}
 	writer.Header().Set("Content-Type", "application/json")
 	writer.WriteHeader(http.StatusOK)
-	writer.Write(jsonResponse)
+	if err := json.NewEncoder(writer).Encode(response); err != nil {
+		http.Error(writer, "Failed to write response", http.StatusInternalServerError)
+	}
 }
 
 func (c ConfigGroupHandler) AddConfigToGroup(writer http.ResponseWriter, request *http.Request) {

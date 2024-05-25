@@ -99,18 +99,24 @@ func (c ConfigHandler) DeleteConfig(writer http.ResponseWriter, request *http.Re
 
 	versionInt, err := strconv.Atoi(version)
 	if err != nil {
-		http.Error(writer, err.Error(), http.StatusBadRequest)
+		http.Error(writer, "Invalid version format", http.StatusBadRequest)
 		return
 	}
+
 	err = c.service.DeleteConfig(name, versionInt)
 	if err != nil {
-		http.Error(writer, err.Error(), http.StatusNotFound)
+		if err.Error() == "config not found" {
+			http.Error(writer, err.Error(), http.StatusNotFound)
+		} else {
+			http.Error(writer, "Internal Server Error", http.StatusInternalServerError)
+		}
 		return
 	}
 
 	response := map[string]string{"message": "Configuration successfully deleted"}
-	jsonResponse, _ := json.Marshal(response)
 	writer.Header().Set("Content-Type", "application/json")
 	writer.WriteHeader(http.StatusOK)
-	writer.Write(jsonResponse)
+	if err := json.NewEncoder(writer).Encode(response); err != nil {
+		http.Error(writer, "Failed to write response", http.StatusInternalServerError)
+	}
 }

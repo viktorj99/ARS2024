@@ -60,6 +60,18 @@ func (r *ConfigConsulRepository) GetConfig(name string, version int) (model.Conf
 func (r *ConfigConsulRepository) DeleteConfig(name string, version int) error {
 	kv := r.client.KV()
 	key := fmt.Sprintf("config/%s/%d", name, version)
-	_, err := kv.Delete(key, nil)
-	return err
+
+	pair, _, err := kv.Get(key, nil)
+	if err != nil {
+		return fmt.Errorf("error checking config: %v", err)
+	}
+	if pair == nil {
+		return fmt.Errorf("config not found")
+	}
+
+	_, err = kv.Delete(key, nil)
+	if err != nil {
+		return fmt.Errorf("error deleting config : %v", err)
+	}
+	return nil
 }
