@@ -23,6 +23,16 @@ func NewConfigHandler(service service.ConfigService) ConfigHandler {
 	}
 }
 
+// @Summary Add a new configuration
+// @Description Adds a new configuration
+// @Tags configs
+// @Accept json
+// @Produce json
+// @Param config body model.Config true "Configuration to add"
+// @Success 200 {object} model.Config
+// @Failure 400 {string} string "Invalid input"
+// @Failure 500 {string} string "Internal server error"
+// @Router /configs [post]
 func (c ConfigHandler) AddConfig(writer http.ResponseWriter, request *http.Request) {
 	defer request.Body.Close()
 
@@ -31,39 +41,47 @@ func (c ConfigHandler) AddConfig(writer http.ResponseWriter, request *http.Reque
 	decoder := json.NewDecoder(request.Body)
 	err := decoder.Decode(&config)
 	if err != nil {
-		fmt.Fprintf(writer, "Error parsing JSON: %v", err)
+		http.Error(writer, fmt.Sprintf("Error parsing JSON: %v", err), http.StatusBadRequest)
 		return
 	}
-	if config.Name == "" {
-		fmt.Fprintf(writer, "Error: 'name' field is required and cannot be empty")
-		return
-	}
-	if config.Version == 0 {
-		fmt.Fprintf(writer, "Error: 'version' field is required and cannot be zero")
+	if config.Name == "" || config.Version == 0 || len(config.Parameters) == 0 || len(config.Labels) == 0 {
+		http.Error(writer, "Error: 'name', 'version', 'params', and 'labels' fields are required and cannot be empty", http.StatusBadRequest)
 		return
 	}
 
-	_, exists := c.service.GetConfig(config.Name, config.Version)
-	if exists == nil {
+	existingConfig, err := c.service.GetConfig(config.Name, config.Version)
+	if err != nil && err.Error() != "config not found" {
+		http.Error(writer, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
+	if existingConfig.Name != "" {
 		http.Error(writer, "Configuration with the given name and version already exists", http.StatusConflict)
 		return
 	}
 
-	if len(config.Parameters) == 0 {
-		fmt.Fprintf(writer, "Error: 'params' field is required and cannot be empty")
+	err = c.service.AddConfig(config)
+	if err != nil {
+		http.Error(writer, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
 
-	if len(config.Labels) == 0 {
-		fmt.Fprintf(writer, "Error: 'labels' field is required and cannot be empty")
-		return
-	}
-
-	c.service.AddConfig(config)
-	fmt.Fprintf(writer, "Received config: %+v", config)
+	writer.Header().Set("Content-Type", "application/json")
+	writer.WriteHeader(http.StatusOK)
+	json.NewEncoder(writer).Encode(config)
 }
 
-// GET /configs/{name}/{version}
+// @Summary Get a configuration
+// @Description Retrieves a configuration by name and version
+// @Tags configs
+// @Produce json
+// @Param name path string true "Name of the configuration"
+// @Param version path int true "Version of the configuration"
+// @Success 200 {object} model.Config
+// @Failure 400 {string} string "Invalid input"
+// @Failure 404 {string} string "Configuration not found"
+// @Failure 500 {string} string "Internal server error"
+// @Router /configs/{name}/{version} [get]
 func (c ConfigHandler) GetConfig(writer http.ResponseWriter, request *http.Request) {
 	// time.Sleep(10 * time.Second)
 	name := mux.Vars(request)["name"]
@@ -71,28 +89,34 @@ func (c ConfigHandler) GetConfig(writer http.ResponseWriter, request *http.Reque
 
 	versionInt, err := strconv.Atoi(version)
 	if err != nil {
-		http.Error(writer, err.Error(), http.StatusBadRequest)
+		http.Error(writer, "Invalid version format", http.StatusBadRequest)
 		return
 	}
 
-	// pozovi servis metodu
 	config, err := c.service.GetConfig(name, versionInt)
 	if err != nil {
-		http.Error(writer, err.Error(), http.StatusNotFound)
+		if err.Error() == "config not found" {
+			http.Error(writer, err.Error(), http.StatusNotFound)
+		} else {
+			http.Error(writer, "Internal Server Error", http.StatusInternalServerError)
+		}
 		return
 	}
 
-	// vrati odgovor
-	response, err := json.Marshal(config)
-	if err != nil {
-		http.Error(writer, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	writer.Header().Set("Content−Type", "application/json")
-	writer.Write(response)
+	writer.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(writer).Encode(config)
 }
 
+// @Summary Delete a configuration
+// @Description Deletes a configuration by name and version
+// @Tags configs
+// @Param name path string true "Name of the configuration"
+// @Param version path int true "Version of the configuration"
+// @Success 200 {string} string "Successfully deleted configuration"
+// @Failure 400 {string} string "Invalid input"
+// @Failure 404 {string} string "Configuration not found"
+// @Failure 500 {string} string "Internal server error"
+// @Router /configs/{name}/{version} [delete]
 func (c ConfigHandler) DeleteConfig(writer http.ResponseWriter, request *http.Request) {
 	name := mux.Vars(request)["name"]
 	version := mux.Vars(request)["version"]
@@ -116,7 +140,5 @@ func (c ConfigHandler) DeleteConfig(writer http.ResponseWriter, request *http.Re
 	response := map[string]string{"message": "Configuration successfully deleted"}
 	writer.Header().Set("Content-Type", "application/json")
 	writer.WriteHeader(http.StatusOK)
-	if err := json.NewEncoder(writer).Encode(response); err != nil {
-		http.Error(writer, "Failed to write response", http.StatusInternalServerError)
-	}
+	json.NewEncoder(writer).Encode(response)
 }

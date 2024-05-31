@@ -11,9 +11,27 @@ import (
 	"projekat/service"
 	"time"
 
+	_ "projekat/docs"
+
 	"github.com/gorilla/mux"
+	httpSwagger "github.com/swaggo/http-swagger"
 	"golang.org/x/time/rate"
 )
+
+// @title Configuration API
+// @version 1.0
+// @description This is a sample server for a configuration service.
+// @termsOfService http://swagger.io/terms/
+
+// @contact.name API Support
+// @contact.url http://www.swagger.io/support
+// @contact.email support@swagger.io
+
+// @license.name Apache 2.0
+// @license.url http://www.apache.org/licenses/LICENSE-2.0.html
+
+// @host localhost:8080
+// @BasePath /
 
 func main() {
 	repo, err := repository.NewConfigConsulRepository()
@@ -28,33 +46,6 @@ func main() {
 
 	serviceConfig := service.NewConfigService(repo)
 	serviceConfigGroup := service.NewConfigGroupService(repoGroup)
-
-	// params := make(map[string]string)
-	// params["username"] = "pera"
-	// params["port"] = "5432"
-
-	// labels := make(map[string]string)
-	// labels["l1"] = "v1"
-	// labels["l2"] = "v2"
-
-	// config := model.Config{
-	// 	Name:       "viktorova",
-	// 	Version:    2,
-	// 	Parameters: params,
-	// 	Labels:     labels,
-	// }
-
-	// configs := []model.Config{}
-	// configs = append(configs, config)
-
-	// configGroup := model.ConfigGroup{
-	// 	Name:           "momirova",
-	// 	Version:        2,
-	// 	Configurations: configs,
-	// }
-
-	// serviceConfig.AddConfig(config)
-	// serviceConfigGroup.AddConfigGroup(configGroup)
 
 	handlerConfig := handlers.NewConfigHandler(serviceConfig)
 	handlerConfigGroup := handlers.NewConfigGroupHandler(serviceConfigGroup, serviceConfig)
@@ -74,6 +65,9 @@ func main() {
 	router.Handle("/configGroups/{groupName}/{groupVersion}/{configName}/{configVersion}", handlers.RateLimit(limiter, http.HandlerFunc(handlerConfigGroup.DeleteConfigFromGroup))).Methods("DELETE")
 	router.Handle("/configGroups/{groupName}/{groupVersion}/{labels}", handlers.RateLimit(limiter, http.HandlerFunc(handlerConfigGroup.GetConfigsFromGroupByLabels))).Methods("GET")
 	router.Handle("/configGroups/{groupName}/{groupVersion}/{labels}", handlers.RateLimit(limiter, http.HandlerFunc(handlerConfigGroup.DeleteConfigsFromGroupByLabels))).Methods("DELETE")
+
+	// Swagger documentation route
+	router.PathPrefix("/swagger").Handler(httpSwagger.WrapHandler)
 
 	server := &http.Server{
 		Addr:    "0.0.0.0:8080",
