@@ -9,19 +9,22 @@ import (
 	"strconv"
 
 	"github.com/gorilla/mux"
+	"go.opentelemetry.io/otel/trace"
 )
 
 // Klasa
 type ConfigGroupHandler struct {
 	configGroupservice service.ConfigGroupService
 	configService      service.ConfigService
+	tracer             trace.Tracer
 }
 
 // Konstruktor
-func NewConfigGroupHandler(configGroupservice service.ConfigGroupService, configService service.ConfigService) ConfigGroupHandler {
+func NewConfigGroupHandler(configGroupservice service.ConfigGroupService, configService service.ConfigService, tracer trace.Tracer) ConfigGroupHandler {
 	return ConfigGroupHandler{
 		configGroupservice: configGroupservice,
 		configService:      configService,
+		tracer:             tracer,
 	}
 }
 
@@ -38,6 +41,9 @@ func NewConfigGroupHandler(configGroupservice service.ConfigGroupService, config
 // @Failure 500 {string} string "Internal server error"
 // @Router /configGroups/{name}/{version} [get]
 func (c ConfigGroupHandler) GetConfigGroup(writer http.ResponseWriter, request *http.Request) {
+	ctx, span := c.tracer.Start(request.Context(), "GetConfigGroupHandler")
+	defer span.End()
+
 	name := mux.Vars(request)["name"]
 	version := mux.Vars(request)["version"]
 
@@ -47,7 +53,7 @@ func (c ConfigGroupHandler) GetConfigGroup(writer http.ResponseWriter, request *
 		return
 	}
 
-	config, err := c.configGroupservice.GetConfigGroup(name, versionInt)
+	config, err := c.configGroupservice.GetConfigGroup(ctx, name, versionInt)
 	if err != nil {
 		http.Error(writer, err.Error(), http.StatusNotFound)
 		return
@@ -74,6 +80,9 @@ func (c ConfigGroupHandler) GetConfigGroup(writer http.ResponseWriter, request *
 // @Failure 500 {string} string "Internal server error"
 // @Router /configGroups [post]
 func (c ConfigGroupHandler) AddConfigGroup(writer http.ResponseWriter, request *http.Request) {
+	ctx, span := c.tracer.Start(request.Context(), "AddConfigGroupHandler")
+	defer span.End()
+
 	defer request.Body.Close()
 
 	var configGroup model.ConfigGroup
@@ -99,12 +108,12 @@ func (c ConfigGroupHandler) AddConfigGroup(writer http.ResponseWriter, request *
 
 	configList := configGroup.Configurations
 	for i := 0; i < len(configList); i++ {
-		_, err := c.configService.GetConfig(configList[i].Name, configList[i].Version)
+		_, err := c.configService.GetConfig(ctx, configList[i].Name, configList[i].Version)
 		if err != nil {
-			c.configService.AddConfig(configList[i])
+			c.configService.AddConfig(ctx, configList[i])
 		}
 	}
-	err = c.configGroupservice.AddConfigGroup(configGroup)
+	err = c.configGroupservice.AddConfigGroup(ctx, configGroup)
 	if err != nil {
 		http.Error(writer, "Internal Server Error", http.StatusInternalServerError)
 		return
@@ -126,6 +135,9 @@ func (c ConfigGroupHandler) AddConfigGroup(writer http.ResponseWriter, request *
 // @Failure 500 {string} string "Internal server error"
 // @Router /configGroups/{name}/{version} [delete]
 func (c ConfigGroupHandler) DeleteConfigGroup(writer http.ResponseWriter, request *http.Request) {
+	ctx, span := c.tracer.Start(request.Context(), "DeleteConfigGroupHandler")
+	defer span.End()
+
 	name := mux.Vars(request)["name"]
 	version := mux.Vars(request)["version"]
 
@@ -135,7 +147,7 @@ func (c ConfigGroupHandler) DeleteConfigGroup(writer http.ResponseWriter, reques
 		return
 	}
 
-	err = c.configGroupservice.DeleteConfigGroup(name, versionInt)
+	err = c.configGroupservice.DeleteConfigGroup(ctx, name, versionInt)
 	if err != nil {
 		if err.Error() == "config group not found" {
 			http.Error(writer, err.Error(), http.StatusNotFound)
@@ -167,6 +179,9 @@ func (c ConfigGroupHandler) DeleteConfigGroup(writer http.ResponseWriter, reques
 // @Failure 500 {string} string "Internal server error"
 // @Router /configGroups/{name}/{version}/configs [post]
 func (c ConfigGroupHandler) AddConfigToGroup(writer http.ResponseWriter, request *http.Request) {
+	ctx, span := c.tracer.Start(request.Context(), "AddConfigToGroupHandler")
+	defer span.End()
+
 	defer request.Body.Close()
 
 	name := mux.Vars(request)["name"]
@@ -178,7 +193,7 @@ func (c ConfigGroupHandler) AddConfigToGroup(writer http.ResponseWriter, request
 		return
 	}
 
-	_, err = c.configGroupservice.GetConfigGroup(name, versionInt)
+	_, err = c.configGroupservice.GetConfigGroup(ctx, name, versionInt)
 	if err != nil {
 		http.Error(writer, err.Error(), http.StatusNotFound)
 		return
@@ -209,7 +224,7 @@ func (c ConfigGroupHandler) AddConfigToGroup(writer http.ResponseWriter, request
 		return
 	}
 
-	group, err := c.configGroupservice.GetConfigGroup(name, versionInt)
+	group, err := c.configGroupservice.GetConfigGroup(ctx, name, versionInt)
 	if err != nil {
 		http.Error(writer, "Internal Server Error", http.StatusInternalServerError)
 		return
@@ -221,12 +236,12 @@ func (c ConfigGroupHandler) AddConfigToGroup(writer http.ResponseWriter, request
 		}
 	}
 
-	err = c.configService.AddConfig(config)
+	err = c.configService.AddConfig(ctx, config)
 	if err != nil {
 		http.Error(writer, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
-	err = c.configGroupservice.AddConfigToGroup(name, versionInt, config)
+	err = c.configGroupservice.AddConfigToGroup(ctx, name, versionInt, config)
 	if err != nil {
 		http.Error(writer, "Internal Server Error", http.StatusInternalServerError)
 		return
@@ -250,6 +265,9 @@ func (c ConfigGroupHandler) AddConfigToGroup(writer http.ResponseWriter, request
 // @Failure 500 {string} string "Internal server error"
 // @Router /configGroups/{groupName}/{groupVersion}/{configName}/{configVersion} [delete]
 func (c ConfigGroupHandler) DeleteConfigFromGroup(writer http.ResponseWriter, request *http.Request) {
+	ctx, span := c.tracer.Start(request.Context(), "DeleteConfigFromGroupHandler")
+	defer span.End()
+
 	groupName := mux.Vars(request)["groupName"]
 	groupVersion := mux.Vars(request)["groupVersion"]
 	configName := mux.Vars(request)["configName"]
@@ -267,7 +285,7 @@ func (c ConfigGroupHandler) DeleteConfigFromGroup(writer http.ResponseWriter, re
 		return
 	}
 
-	err = c.configGroupservice.DeleteConfigFromGroup(groupName, groupVersionInt, configName, configVersionInt)
+	err = c.configGroupservice.DeleteConfigFromGroup(ctx, groupName, groupVersionInt, configName, configVersionInt)
 	if err != nil {
 		http.Error(writer, err.Error(), http.StatusNotFound)
 		return
@@ -293,6 +311,9 @@ func (c ConfigGroupHandler) DeleteConfigFromGroup(writer http.ResponseWriter, re
 // @Failure 500 {string} string "Internal server error"
 // @Router /configGroups/{groupName}/{groupVersion}/{labels} [get]
 func (c ConfigGroupHandler) GetConfigsFromGroupByLabels(w http.ResponseWriter, r *http.Request) {
+	ctx, span := c.tracer.Start(r.Context(), "GetConfigsFromGroupByLabelsHandler")
+	defer span.End()
+
 	params := mux.Vars(r)
 	groupName := params["groupName"]
 	groupVersionStr := params["groupVersion"]
@@ -304,7 +325,7 @@ func (c ConfigGroupHandler) GetConfigsFromGroupByLabels(w http.ResponseWriter, r
 		return
 	}
 
-	configs, err := c.configGroupservice.GetConfigsFromGroupByLabel(groupName, groupVersion, labels)
+	configs, err := c.configGroupservice.GetConfigsFromGroupByLabel(ctx, groupName, groupVersion, labels)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
@@ -327,6 +348,9 @@ func (c ConfigGroupHandler) GetConfigsFromGroupByLabels(w http.ResponseWriter, r
 // @Failure 500 {string} string "Internal server error"
 // @Router /configGroups/{groupName}/{groupVersion}/{labels} [delete]
 func (c ConfigGroupHandler) DeleteConfigsFromGroupByLabels(w http.ResponseWriter, r *http.Request) {
+	ctx, span := c.tracer.Start(r.Context(), "DeleteConfigsFromGroupByLabelsHandler")
+	defer span.End()
+
 	params := mux.Vars(r)
 	groupName := params["groupName"]
 	groupVersionStr := params["groupVersion"]
@@ -338,7 +362,7 @@ func (c ConfigGroupHandler) DeleteConfigsFromGroupByLabels(w http.ResponseWriter
 		return
 	}
 
-	err = c.configGroupservice.DeleteConfigsFromGroupByLabel(groupName, groupVersion, labels)
+	err = c.configGroupservice.DeleteConfigsFromGroupByLabel(ctx, groupName, groupVersion, labels)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return

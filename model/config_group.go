@@ -1,5 +1,7 @@
 package model
 
+import "context"
+
 type ConfigGroup struct {
 	// Name of the configuration group
 	// Required: true
@@ -15,11 +17,11 @@ type ConfigGroup struct {
 }
 
 type ConfigGroupRepository interface {
-	AddConfigGroup(configGroup ConfigGroup) error
-	GetConfigGroup(name string, version int) (ConfigGroup, error)
-	DeleteConfigGroup(name string, version int) error
-	AddConfigToGroup(name string, version int, config Config) error
-	DeleteConfigFromGroup(groupName string, groupVersion int, configName string, configVersion int) error
-	GetConfigsFromGroupByLabel(groupName string, groupVersion int, labels string) ([]Config, error)
-	DeleteConfigsFromGroupByLabel(groupName string, groupVersion int, labels string) error
+	AddConfigGroup(ctx context.Context, configGroup ConfigGroup) error
+	GetConfigGroup(ctx context.Context, name string, version int) (ConfigGroup, error)
+	DeleteConfigGroup(ctx context.Context, name string, version int) error
+	AddConfigToGroup(ctx context.Context, name string, version int, config Config) error
+	DeleteConfigFromGroup(ctx context.Context, groupName string, groupVersion int, configName string, configVersion int) error
+	GetConfigsFromGroupByLabel(ctx context.Context, groupName string, groupVersion int, labels string) ([]Config, error)
+	DeleteConfigsFromGroupByLabel(ctx context.Context, groupName string, groupVersion int, labels string) error
 }

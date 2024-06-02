@@ -1,19 +1,22 @@
 package repository
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
 	"projekat/model"
 
 	"github.com/hashicorp/consul/api"
+	"go.opentelemetry.io/otel/trace"
 )
 
 type ConfigConsulRepository struct {
 	client *api.Client
+	tracer trace.Tracer
 }
 
-func NewConfigConsulRepository() (*ConfigConsulRepository, error) {
+func NewConfigConsulRepository(tracer trace.Tracer) (*ConfigConsulRepository, error) {
 	consulAddress := fmt.Sprintf("%s:%s", os.Getenv("DB"), os.Getenv("DBPORT"))
 	config := api.DefaultConfig()
 	config.Address = consulAddress
@@ -22,10 +25,13 @@ func NewConfigConsulRepository() (*ConfigConsulRepository, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &ConfigConsulRepository{client: client}, nil
+	return &ConfigConsulRepository{client: client, tracer: tracer}, nil
 }
 
-func (r *ConfigConsulRepository) AddConfig(config model.Config) error {
+func (r *ConfigConsulRepository) AddConfig(ctx context.Context, config model.Config) error {
+	ctx, span := r.tracer.Start(ctx, "AddConfig")
+	defer span.End()
+
 	kv := r.client.KV()
 	data, err := json.Marshal(config)
 	if err != nil {
@@ -39,7 +45,10 @@ func (r *ConfigConsulRepository) AddConfig(config model.Config) error {
 	return err
 }
 
-func (r *ConfigConsulRepository) GetConfig(name string, version int) (model.Config, error) {
+func (r *ConfigConsulRepository) GetConfig(ctx context.Context, name string, version int) (model.Config, error) {
+	ctx, span := r.tracer.Start(ctx, "GetConfig")
+	defer span.End()
+
 	kv := r.client.KV()
 	key := fmt.Sprintf("config/%s/%d", name, version)
 	pair, _, err := kv.Get(key, nil)
@@ -57,7 +66,10 @@ func (r *ConfigConsulRepository) GetConfig(name string, version int) (model.Conf
 	return config, nil
 }
 
-func (r *ConfigConsulRepository) DeleteConfig(name string, version int) error {
+func (r *ConfigConsulRepository) DeleteConfig(ctx context.Context, name string, version int) error {
+	ctx, span := r.tracer.Start(ctx, "DeleteConfig")
+	defer span.End()
+
 	kv := r.client.KV()
 	key := fmt.Sprintf("config/%s/%d", name, version)
 

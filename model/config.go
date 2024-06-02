@@ -1,5 +1,7 @@
 package model
 
+import "context"
+
 // swagger:model Config
 type Config struct {
 	// Name of the configuration
@@ -20,7 +22,7 @@ type Config struct {
 }
 
 type ConfigRepository interface {
-	AddConfig(config Config) error
-	GetConfig(name string, version int) (Config, error)
-	DeleteConfig(name string, version int) error
+	AddConfig(ctx context.Context, config Config) error
+	GetConfig(ctx context.Context, name string, version int) (Config, error)
+	DeleteConfig(ctx context.Context, name string, version int) error
 }

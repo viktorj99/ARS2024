@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -8,10 +9,13 @@ import (
 	"strings"
 
 	"github.com/hashicorp/consul/api"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/trace"
 )
 
 type ConfigGroupConsulRepository struct {
 	client *api.Client
+	tracer trace.Tracer
 }
 
 // Constructor to create a new ConfigGroupConsulRepository
@@ -24,10 +28,18 @@ func NewConfigGroupConsulRepository() (*ConfigGroupConsulRepository, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &ConfigGroupConsulRepository{client: client}, nil
+	tracer := otel.Tracer("ConfigGroupConsulRepository")
+
+	return &ConfigGroupConsulRepository{
+		client: client,
+		tracer: tracer,
+	}, nil
 }
 
-func (r *ConfigGroupConsulRepository) AddConfigGroup(configGroup model.ConfigGroup) error {
+func (r *ConfigGroupConsulRepository) AddConfigGroup(ctx context.Context, configGroup model.ConfigGroup) error {
+	ctx, span := r.tracer.Start(ctx, "AddConfigGroup")
+	defer span.End()
+
 	kv := r.client.KV()
 	data, err := json.Marshal(configGroup)
 	if err != nil {
@@ -41,7 +53,10 @@ func (r *ConfigGroupConsulRepository) AddConfigGroup(configGroup model.ConfigGro
 	return err
 }
 
-func (r *ConfigGroupConsulRepository) GetConfigGroup(name string, version int) (model.ConfigGroup, error) {
+func (r *ConfigGroupConsulRepository) GetConfigGroup(ctx context.Context, name string, version int) (model.ConfigGroup, error) {
+	ctx, span := r.tracer.Start(ctx, "GetConfigGroup")
+	defer span.End()
+
 	kv := r.client.KV()
 	key := fmt.Sprintf("configgroup/%s/%d", name, version)
 	pair, _, err := kv.Get(key, nil)
@@ -59,7 +74,10 @@ func (r *ConfigGroupConsulRepository) GetConfigGroup(name string, version int) (
 	return configGroup, nil
 }
 
-func (r *ConfigGroupConsulRepository) DeleteConfigGroup(name string, version int) error {
+func (r *ConfigGroupConsulRepository) DeleteConfigGroup(ctx context.Context, name string, version int) error {
+	ctx, span := r.tracer.Start(ctx, "DeleteConfigGroup")
+	defer span.End()
+
 	kv := r.client.KV()
 	key := fmt.Sprintf("configgroup/%s/%d", name, version)
 
@@ -79,17 +97,23 @@ func (r *ConfigGroupConsulRepository) DeleteConfigGroup(name string, version int
 	return nil
 }
 
-func (r *ConfigGroupConsulRepository) AddConfigToGroup(name string, version int, config model.Config) error {
-	configGroup, err := r.GetConfigGroup(name, version)
+func (r *ConfigGroupConsulRepository) AddConfigToGroup(ctx context.Context, name string, version int, config model.Config) error {
+	ctx, span := r.tracer.Start(ctx, "AddConfigToGroup")
+	defer span.End()
+
+	configGroup, err := r.GetConfigGroup(ctx, name, version)
 	if err != nil {
 		return err
 	}
 	configGroup.Configurations = append(configGroup.Configurations, config)
-	return r.AddConfigGroup(configGroup)
+	return r.AddConfigGroup(ctx, configGroup)
 }
 
-func (r *ConfigGroupConsulRepository) DeleteConfigFromGroup(groupName string, groupVersion int, configName string, configVersion int) error {
-	configGroup, err := r.GetConfigGroup(groupName, groupVersion)
+func (r *ConfigGroupConsulRepository) DeleteConfigFromGroup(ctx context.Context, groupName string, groupVersion int, configName string, configVersion int) error {
+	ctx, span := r.tracer.Start(ctx, "DeleteConfigFromGroup")
+	defer span.End()
+
+	configGroup, err := r.GetConfigGroup(ctx, groupName, groupVersion)
 	if err != nil {
 		return err
 	}
@@ -99,10 +123,13 @@ func (r *ConfigGroupConsulRepository) DeleteConfigFromGroup(groupName string, gr
 			break
 		}
 	}
-	return r.AddConfigGroup(configGroup)
+	return r.AddConfigGroup(ctx, configGroup)
 }
 
-func (r *ConfigGroupConsulRepository) GetConfigsFromGroupByLabel(groupName string, groupVersion int, labels string) ([]model.Config, error) {
+func (r *ConfigGroupConsulRepository) GetConfigsFromGroupByLabel(ctx context.Context, groupName string, groupVersion int, labels string) ([]model.Config, error) {
+	ctx, span := r.tracer.Start(ctx, "GetConfigsFromGroupByLabel")
+	defer span.End()
+
 	labelMap := make(map[string]string)
 	labelPairs := strings.Split(labels, ";")
 
@@ -114,7 +141,7 @@ func (r *ConfigGroupConsulRepository) GetConfigsFromGroupByLabel(groupName strin
 		labelMap[parts[0]] = parts[1]
 	}
 
-	configGroup, err := r.GetConfigGroup(groupName, groupVersion)
+	configGroup, err := r.GetConfigGroup(ctx, groupName, groupVersion)
 	if err != nil {
 		return nil, err
 	}
@@ -133,7 +160,10 @@ func (r *ConfigGroupConsulRepository) GetConfigsFromGroupByLabel(groupName strin
 	return configs, nil
 }
 
-func (r *ConfigGroupConsulRepository) DeleteConfigsFromGroupByLabel(groupName string, groupVersion int, labels string) error {
+func (r *ConfigGroupConsulRepository) DeleteConfigsFromGroupByLabel(ctx context.Context, groupName string, groupVersion int, labels string) error {
+	ctx, span := r.tracer.Start(ctx, "DeleteConfigsFromGroupByLabel")
+	defer span.End()
+
 	labelMap := make(map[string]string)
 	labelPairs := strings.Split(labels, ";")
 
@@ -145,7 +175,7 @@ func (r *ConfigGroupConsulRepository) DeleteConfigsFromGroupByLabel(groupName st
 		labelMap[parts[0]] = parts[1]
 	}
 
-	configGroup, err := r.GetConfigGroup(groupName, groupVersion)
+	configGroup, err := r.GetConfigGroup(ctx, groupName, groupVersion)
 	if err != nil {
 		return err
 	}
@@ -165,7 +195,7 @@ func (r *ConfigGroupConsulRepository) DeleteConfigsFromGroupByLabel(groupName st
 	}
 
 	configGroup.Configurations = updatedConfigs
-	return r.AddConfigGroup(configGroup)
+	return r.AddConfigGroup(ctx, configGroup)
 }
 
 func labelMapsAreEqual(map1, map2 map[string]string) bool {

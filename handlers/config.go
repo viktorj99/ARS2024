@@ -9,17 +9,20 @@ import (
 	"strconv"
 
 	"github.com/gorilla/mux"
+	"go.opentelemetry.io/otel/trace"
 )
 
 // Klasa
 type ConfigHandler struct {
 	service service.ConfigService
+	tracer  trace.Tracer
 }
 
 // Konstruktor
-func NewConfigHandler(service service.ConfigService) ConfigHandler {
+func NewConfigHandler(service service.ConfigService, tracer trace.Tracer) ConfigHandler {
 	return ConfigHandler{
 		service: service,
+		tracer:  tracer,
 	}
 }
 
@@ -34,6 +37,9 @@ func NewConfigHandler(service service.ConfigService) ConfigHandler {
 // @Failure 500 {string} string "Internal server error"
 // @Router /configs [post]
 func (c ConfigHandler) AddConfig(writer http.ResponseWriter, request *http.Request) {
+	ctx, span := c.tracer.Start(request.Context(), "AddConfigHandler")
+	defer span.End()
+
 	defer request.Body.Close()
 
 	var config model.Config
@@ -49,7 +55,7 @@ func (c ConfigHandler) AddConfig(writer http.ResponseWriter, request *http.Reque
 		return
 	}
 
-	existingConfig, err := c.service.GetConfig(config.Name, config.Version)
+	existingConfig, err := c.service.GetConfig(ctx, config.Name, config.Version)
 	if err != nil && err.Error() != "config not found" {
 		http.Error(writer, "Internal Server Error", http.StatusInternalServerError)
 		return
@@ -60,7 +66,7 @@ func (c ConfigHandler) AddConfig(writer http.ResponseWriter, request *http.Reque
 		return
 	}
 
-	err = c.service.AddConfig(config)
+	err = c.service.AddConfig(ctx, config)
 	if err != nil {
 		http.Error(writer, "Internal Server Error", http.StatusInternalServerError)
 		return
@@ -83,7 +89,9 @@ func (c ConfigHandler) AddConfig(writer http.ResponseWriter, request *http.Reque
 // @Failure 500 {string} string "Internal server error"
 // @Router /configs/{name}/{version} [get]
 func (c ConfigHandler) GetConfig(writer http.ResponseWriter, request *http.Request) {
-	// time.Sleep(10 * time.Second)
+	ctx, span := c.tracer.Start(request.Context(), "GetConfigHandler")
+	defer span.End()
+
 	name := mux.Vars(request)["name"]
 	version := mux.Vars(request)["version"]
 
@@ -93,7 +101,7 @@ func (c ConfigHandler) GetConfig(writer http.ResponseWriter, request *http.Reque
 		return
 	}
 
-	config, err := c.service.GetConfig(name, versionInt)
+	config, err := c.service.GetConfig(ctx, name, versionInt)
 	if err != nil {
 		if err.Error() == "config not found" {
 			http.Error(writer, err.Error(), http.StatusNotFound)
@@ -118,6 +126,9 @@ func (c ConfigHandler) GetConfig(writer http.ResponseWriter, request *http.Reque
 // @Failure 500 {string} string "Internal server error"
 // @Router /configs/{name}/{version} [delete]
 func (c ConfigHandler) DeleteConfig(writer http.ResponseWriter, request *http.Request) {
+	ctx, span := c.tracer.Start(request.Context(), "DeleteConfigHandler")
+	defer span.End()
+
 	name := mux.Vars(request)["name"]
 	version := mux.Vars(request)["version"]
 
@@ -127,7 +138,7 @@ func (c ConfigHandler) DeleteConfig(writer http.ResponseWriter, request *http.Re
 		return
 	}
 
-	err = c.service.DeleteConfig(name, versionInt)
+	err = c.service.DeleteConfig(ctx, name, versionInt)
 	if err != nil {
 		if err.Error() == "config not found" {
 			http.Error(writer, err.Error(), http.StatusNotFound)

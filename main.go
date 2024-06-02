@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"projekat/configuration"
 	"projekat/handlers"
 	"projekat/repository"
 	"projekat/service"
@@ -15,6 +16,12 @@ import (
 
 	"github.com/gorilla/mux"
 	httpSwagger "github.com/swaggo/http-swagger"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/exporters/jaeger"
+	"go.opentelemetry.io/otel/propagation"
+	"go.opentelemetry.io/otel/sdk/resource"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	semconv "go.opentelemetry.io/otel/semconv/v1.4.0"
 	"golang.org/x/time/rate"
 )
 
@@ -34,7 +41,24 @@ import (
 // @BasePath /
 
 func main() {
-	repo, err := repository.NewConfigConsulRepository()
+
+	cfg := configuration.GetConfiguration()
+
+	// Initialize OpenTelemetry
+	ctx := context.Background()
+	exp, err := newExporter(cfg.JaegerAddress)
+	if err != nil {
+		log.Fatalf("failed to initialize exporter: %v", err)
+	}
+
+	tp := newTraceProvider(exp)
+	defer func() { _ = tp.Shutdown(ctx) }()
+	otel.SetTracerProvider(tp)
+	otel.SetTextMapPropagator(propagation.TraceContext{})
+
+	tracer := tp.Tracer("config-service")
+
+	repo, err := repository.NewConfigConsulRepository(tracer)
 	if err != nil {
 		log.Fatalf("Failed to create Consul repository: %v", err)
 	}
@@ -44,11 +68,11 @@ func main() {
 		log.Fatalf("Failed to create Consul repository: %v", err)
 	}
 
-	serviceConfig := service.NewConfigService(repo)
-	serviceConfigGroup := service.NewConfigGroupService(repoGroup)
+	serviceConfig := service.NewConfigService(repo, tracer)
+	serviceConfigGroup := service.NewConfigGroupService(repoGroup, tracer)
 
-	handlerConfig := handlers.NewConfigHandler(serviceConfig)
-	handlerConfigGroup := handlers.NewConfigGroupHandler(serviceConfigGroup, serviceConfig)
+	handlerConfig := handlers.NewConfigHandler(serviceConfig, tracer)
+	handlerConfigGroup := handlers.NewConfigGroupHandler(serviceConfigGroup, serviceConfig, tracer)
 
 	router := mux.NewRouter()
 
@@ -93,4 +117,31 @@ func main() {
 	if err := server.Shutdown(ctx); err != nil {
 		log.Fatal(err)
 	}
+}
+
+func newExporter(address string) (*jaeger.Exporter, error) {
+	exp, err := jaeger.New(jaeger.WithCollectorEndpoint(jaeger.WithEndpoint(address)))
+	if err != nil {
+		return nil, err
+	}
+	return exp, nil
+}
+
+func newTraceProvider(exp sdktrace.SpanExporter) *sdktrace.TracerProvider {
+	// Ensure default SDK resources and the required service name are set.
+	r, err := resource.Merge(
+		resource.Default(),
+		resource.NewWithAttributes(
+			semconv.SchemaURL,
+			semconv.ServiceNameKey.String("config-service"),
+		),
+	)
+	if err != nil {
+		panic(err)
+	}
+
+	return sdktrace.NewTracerProvider(
+		sdktrace.WithBatcher(exp),
+		sdktrace.WithResource(r),
+	)
 }
