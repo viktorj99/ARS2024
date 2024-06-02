@@ -76,20 +76,20 @@ func metricsHandler() http.Handler {
 	return promhttp.HandlerFor(prometheusRegistry, promhttp.HandlerOpts{})
 }
 
-func count(f func(http.ResponseWriter, *http.Request)) func(http.ResponseWriter, *http.Request) {
-	return func(w http.ResponseWriter, r *http.Request) {
+func count(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		route := mux.CurrentRoute(r)
 		path, _ := route.GetPathTemplate()
 
 		rw := &responseWriter{w, http.StatusOK}
 
 		timer := prometheus.NewTimer(httpResponseTimeSeconds.WithLabelValues(fmt.Sprintf("%s %s", r.Method, path))) // creates a time series histogram
-		f(rw, r)                                                                                                    // original function call
+		next.ServeHTTP(rw, r)                                                                                       // original function call
 		timer.ObserveDuration()                                                                                     // needs to wrap around the call so that the data collected is as accurate as possible
 
 		httpHits.Inc()                                                                        // basic HTTP hits counter
 		httpStatusCounter.WithLabelValues(strconv.Itoa(rw.statusCode)).Inc()                  // labels values based on status code
 		httpMethodCounter.WithLabelValues(r.Method).Inc()                                     // labels values based on HTTP method used
 		httpRequestsTotal.With(prometheus.Labels{"method": r.Method, "endpoint": path}).Inc() // increment the http_requests_total counter
-	}
+	})
 }

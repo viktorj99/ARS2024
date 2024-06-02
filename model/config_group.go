@@ -1,9 +1,17 @@
 package model
 
 type ConfigGroup struct {
-	Name           string   `json:"name"`
-	Version        int      `json:"version"`
-	Configurations []Config `json:"config"`
+	// Name of the configuration group
+	// Required: true
+	Name string `json:"name"`
+
+	// Version of the configuration group
+	// Required: true
+	Version int `json:"version"`
+
+	// Configurations in the group
+	// Required: true
+	Configurations []Config `json:"configurations"`
 }
 
 type ConfigGroupRepository interface {

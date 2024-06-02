@@ -7,7 +7,7 @@ import (
 	"golang.org/x/time/rate"
 )
 
-func RateLimit(limiter *rate.Limiter, next func(w http.ResponseWriter, r *http.Request)) http.Handler {
+func RateLimit(limiter *rate.Limiter, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if !limiter.Allow() {
 			message := map[string]string{
@@ -20,7 +20,7 @@ func RateLimit(limiter *rate.Limiter, next func(w http.ResponseWriter, r *http.R
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 			}
 		} else {
-			next(w, r)
+			next.ServeHTTP(w, r)
 		}
 	})
 }
