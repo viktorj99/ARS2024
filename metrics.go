@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"net/http"
 	"strconv"
 
@@ -33,35 +32,38 @@ var (
 			Name: "response_status",
 			Help: "Status of the HTTP response.",
 		},
-		[]string{"status"})
+		[]string{"status"},
+	)
 
 	httpMethodCounter = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Name: "http_method",
 			Help: "HTTP method used.",
 		},
-		[]string{"method"})
+		[]string{"method"},
+	)
 
-	httpResponseTimeSeconds = prometheus.NewHistogramVec(
+	httpResponseTime = prometheus.NewHistogramVec(
 		prometheus.HistogramOpts{
 			Name: "http_response_time",
 			Help: "Duration of the HTTP request.",
 		},
-		[]string{"endpoint"})
+		[]string{"endpoint"},
+	)
 
 	httpRequestsTotal = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Name: "http_requests_total",
 			Help: "Total number of HTTP requests.",
 		},
-		[]string{"method", "endpoint"},
+		[]string{"method", "endpoint", "status"},
 	)
 
 	metricsList = []prometheus.Collector{
 		httpHits,
 		httpStatusCounter,
 		httpMethodCounter,
-		httpResponseTimeSeconds,
+		httpResponseTime,
 		httpRequestsTotal,
 	}
 
@@ -83,13 +85,17 @@ func count(next http.Handler) http.Handler {
 
 		rw := &responseWriter{w, http.StatusOK}
 
-		timer := prometheus.NewTimer(httpResponseTimeSeconds.WithLabelValues(fmt.Sprintf("%s %s", r.Method, path))) // creates a time series histogram
-		next.ServeHTTP(rw, r)                                                                                       // original function call
-		timer.ObserveDuration()                                                                                     // needs to wrap around the call so that the data collected is as accurate as possible
+		timer := prometheus.NewTimer(httpResponseTime.WithLabelValues(path))
+		next.ServeHTTP(rw, r)
+		timer.ObserveDuration()
 
-		httpHits.Inc()                                                                        // basic HTTP hits counter
-		httpStatusCounter.WithLabelValues(strconv.Itoa(rw.statusCode)).Inc()                  // labels values based on status code
-		httpMethodCounter.WithLabelValues(r.Method).Inc()                                     // labels values based on HTTP method used
-		httpRequestsTotal.With(prometheus.Labels{"method": r.Method, "endpoint": path}).Inc() // increment the http_requests_total counter
+		httpHits.Inc()
+		httpStatusCounter.WithLabelValues(strconv.Itoa(rw.statusCode)).Inc()
+		httpMethodCounter.WithLabelValues(r.Method).Inc()
+		httpRequestsTotal.With(prometheus.Labels{
+			"method":   r.Method,
+			"endpoint": path,
+			"status":   strconv.Itoa(rw.statusCode),
+		}).Inc()
 	})
 }

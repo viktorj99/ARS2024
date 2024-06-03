@@ -41,7 +41,7 @@ func NewConfigGroupHandler(configGroupservice service.ConfigGroupService, config
 // @Failure 500 {string} string "Internal server error"
 // @Router /configGroups/{name}/{version} [get]
 func (c ConfigGroupHandler) GetConfigGroup(writer http.ResponseWriter, request *http.Request) {
-	ctx, span := c.tracer.Start(request.Context(), "GetConfigGroupHandler")
+	ctx, span := c.tracer.Start(request.Context(), "GetConfigGroup")
 	defer span.End()
 
 	name := mux.Vars(request)["name"]
@@ -80,7 +80,7 @@ func (c ConfigGroupHandler) GetConfigGroup(writer http.ResponseWriter, request *
 // @Failure 500 {string} string "Internal server error"
 // @Router /configGroups [post]
 func (c ConfigGroupHandler) AddConfigGroup(writer http.ResponseWriter, request *http.Request) {
-	ctx, span := c.tracer.Start(request.Context(), "AddConfigGroupHandler")
+	ctx, span := c.tracer.Start(request.Context(), "AddConfigGroup")
 	defer span.End()
 
 	defer request.Body.Close()
@@ -135,7 +135,7 @@ func (c ConfigGroupHandler) AddConfigGroup(writer http.ResponseWriter, request *
 // @Failure 500 {string} string "Internal server error"
 // @Router /configGroups/{name}/{version} [delete]
 func (c ConfigGroupHandler) DeleteConfigGroup(writer http.ResponseWriter, request *http.Request) {
-	ctx, span := c.tracer.Start(request.Context(), "DeleteConfigGroupHandler")
+	ctx, span := c.tracer.Start(request.Context(), "DeleteConfigGroup")
 	defer span.End()
 
 	name := mux.Vars(request)["name"]
@@ -179,7 +179,7 @@ func (c ConfigGroupHandler) DeleteConfigGroup(writer http.ResponseWriter, reques
 // @Failure 500 {string} string "Internal server error"
 // @Router /configGroups/{name}/{version}/configs [post]
 func (c ConfigGroupHandler) AddConfigToGroup(writer http.ResponseWriter, request *http.Request) {
-	ctx, span := c.tracer.Start(request.Context(), "AddConfigToGroupHandler")
+	ctx, span := c.tracer.Start(request.Context(), "AddConfigToGroup")
 	defer span.End()
 
 	defer request.Body.Close()
@@ -265,7 +265,7 @@ func (c ConfigGroupHandler) AddConfigToGroup(writer http.ResponseWriter, request
 // @Failure 500 {string} string "Internal server error"
 // @Router /configGroups/{groupName}/{groupVersion}/{configName}/{configVersion} [delete]
 func (c ConfigGroupHandler) DeleteConfigFromGroup(writer http.ResponseWriter, request *http.Request) {
-	ctx, span := c.tracer.Start(request.Context(), "DeleteConfigFromGroupHandler")
+	ctx, span := c.tracer.Start(request.Context(), "DeleteConfigFromGroup")
 	defer span.End()
 
 	groupName := mux.Vars(request)["groupName"]
@@ -311,7 +311,7 @@ func (c ConfigGroupHandler) DeleteConfigFromGroup(writer http.ResponseWriter, re
 // @Failure 500 {string} string "Internal server error"
 // @Router /configGroups/{groupName}/{groupVersion}/{labels} [get]
 func (c ConfigGroupHandler) GetConfigsFromGroupByLabels(w http.ResponseWriter, r *http.Request) {
-	ctx, span := c.tracer.Start(r.Context(), "GetConfigsFromGroupByLabelsHandler")
+	ctx, span := c.tracer.Start(r.Context(), "GetConfigsFromGroupByLabels")
 	defer span.End()
 
 	params := mux.Vars(r)
@@ -348,7 +348,7 @@ func (c ConfigGroupHandler) GetConfigsFromGroupByLabels(w http.ResponseWriter, r
 // @Failure 500 {string} string "Internal server error"
 // @Router /configGroups/{groupName}/{groupVersion}/{labels} [delete]
 func (c ConfigGroupHandler) DeleteConfigsFromGroupByLabels(w http.ResponseWriter, r *http.Request) {
-	ctx, span := c.tracer.Start(r.Context(), "DeleteConfigsFromGroupByLabelsHandler")
+	ctx, span := c.tracer.Start(r.Context(), "DeleteConfigsFromGroupByLabels")
 	defer span.End()
 
 	params := mux.Vars(r)

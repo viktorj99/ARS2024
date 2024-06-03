@@ -37,7 +37,7 @@ func NewConfigHandler(service service.ConfigService, tracer trace.Tracer) Config
 // @Failure 500 {string} string "Internal server error"
 // @Router /configs [post]
 func (c ConfigHandler) AddConfig(writer http.ResponseWriter, request *http.Request) {
-	ctx, span := c.tracer.Start(request.Context(), "AddConfigHandler")
+	ctx, span := c.tracer.Start(request.Context(), "AddConfig")
 	defer span.End()
 
 	defer request.Body.Close()
@@ -89,7 +89,7 @@ func (c ConfigHandler) AddConfig(writer http.ResponseWriter, request *http.Reque
 // @Failure 500 {string} string "Internal server error"
 // @Router /configs/{name}/{version} [get]
 func (c ConfigHandler) GetConfig(writer http.ResponseWriter, request *http.Request) {
-	ctx, span := c.tracer.Start(request.Context(), "GetConfigHandler")
+	ctx, span := c.tracer.Start(request.Context(), "GetConfig")
 	defer span.End()
 
 	name := mux.Vars(request)["name"]
@@ -126,7 +126,7 @@ func (c ConfigHandler) GetConfig(writer http.ResponseWriter, request *http.Reque
 // @Failure 500 {string} string "Internal server error"
 // @Router /configs/{name}/{version} [delete]
 func (c ConfigHandler) DeleteConfig(writer http.ResponseWriter, request *http.Request) {
-	ctx, span := c.tracer.Start(request.Context(), "DeleteConfigHandler")
+	ctx, span := c.tracer.Start(request.Context(), "DeleteConfig")
 	defer span.End()
 
 	name := mux.Vars(request)["name"]
