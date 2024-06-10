@@ -11,7 +11,7 @@ http://localhost:8080/swagger/index.html#/
 #Metrics
 
 #Ukupan broj get zahteva u prethodna 24 sata
-sum(increase(http_requests_total[24h]))
+http_requests_total
 
 #Broj uspešnih zahteva (status kodovi odgovora 2xx, 3xx) za prethodna 24 sata:
 sum(increase(http_requests_total{status=~"2..|3.."}[24h]))
