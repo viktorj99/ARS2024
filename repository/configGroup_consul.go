@@ -59,15 +59,15 @@ func (r *ConfigGroupConsulRepository) GetConfigGroup(ctx context.Context, name s
 
 	kv := r.client.KV()
 	key := fmt.Sprintf("configgroup/%s/%d", name, version)
-	pair, _, err := kv.Get(key, nil)
+	pairs, _, err := kv.List(key, nil)
 	if err != nil {
 		return model.ConfigGroup{}, err
 	}
-	if pair == nil {
+	if len(pairs) == 0 {
 		return model.ConfigGroup{}, fmt.Errorf("config group not found")
 	}
 	var configGroup model.ConfigGroup
-	err = json.Unmarshal(pair.Value, &configGroup)
+	err = json.Unmarshal(pairs[0].Value, &configGroup)
 	if err != nil {
 		return model.ConfigGroup{}, err
 	}
@@ -80,20 +80,19 @@ func (r *ConfigGroupConsulRepository) DeleteConfigGroup(ctx context.Context, nam
 
 	kv := r.client.KV()
 	key := fmt.Sprintf("configgroup/%s/%d", name, version)
-
-	pair, _, err := kv.Get(key, nil)
+	pairs, _, err := kv.List(key, nil)
 	if err != nil {
 		return fmt.Errorf("error checking config group: %v", err)
 	}
-	if pair == nil {
+	if len(pairs) == 0 {
 		return fmt.Errorf("config group not found")
 	}
-
-	_, err = kv.Delete(key, nil)
-	if err != nil {
-		return fmt.Errorf("error deleting config group: %v", err)
+	for _, pair := range pairs {
+		_, err = kv.Delete(pair.Key, nil)
+		if err != nil {
+			return fmt.Errorf("error deleting config group: %v", err)
+		}
 	}
-
 	return nil
 }
 

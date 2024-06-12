@@ -67,6 +67,13 @@ func main() {
 		log.Fatalf("Failed to create Consul repository: %v", err)
 	}
 
+	idempotencyRepo, err := repository.NewIdempotencyRepository("127.0.0.1", "8500")
+	if err != nil {
+		log.Fatalf("Failed to create Idempotency repository: %v", err)
+	}
+
+	handlers.SetIdempotencyRepository(idempotencyRepo)
+
 	serviceConfig := service.NewConfigService(repo, tracer)
 	serviceConfigGroup := service.NewConfigGroupService(repoGroup, tracer)
 

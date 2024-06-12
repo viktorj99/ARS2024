@@ -2,19 +2,25 @@ package handlers
 
 import (
 	"bytes"
+	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"io"
+	"log"
 	"net/http"
+	"projekat/repository"
 	"sync"
 	"time"
 )
 
 var (
-	idempotencyData   = make(map[string]map[string]time.Time)
-	idempotencyBodies = make(map[string]map[string]string)
-	mutex             = &sync.Mutex{}
+	idempotencyRepository *repository.IdempotencyRepository
+	mutex                 = &sync.Mutex{}
 )
+
+func SetIdempotencyRepository(repo *repository.IdempotencyRepository) {
+	idempotencyRepository = repo
+}
 
 func IdempotencyMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -43,20 +49,23 @@ func IdempotencyMiddleware(next http.Handler) http.Handler {
 		mutex.Lock()
 		defer mutex.Unlock()
 
-		if _, exists := idempotencyData[endpoint]; !exists {
-			idempotencyData[endpoint] = make(map[string]time.Time)
-			idempotencyBodies[endpoint] = make(map[string]string)
+		existingHash, err := idempotencyRepository.GetIdempotencyKey(context.Background(), endpoint, idempotencyKey)
+		if err != nil {
+			http.Error(w, "Error checking idempotency key", http.StatusInternalServerError)
+			return
 		}
 
-		if existingHash, exists := idempotencyBodies[endpoint][idempotencyKey]; exists {
-			if existingHash == bodyHash {
-				http.Error(w, "Duplicate request with same body", http.StatusConflict)
-				return
-			}
+		if existingHash == bodyHash {
+			log.Printf("Duplicate request detected: %s for endpoint: %s", idempotencyKey, endpoint)
+			http.Error(w, "Duplicate request with same bodyyyy daddy", http.StatusConflict)
+			return
 		}
 
-		idempotencyData[endpoint][idempotencyKey] = time.Now()
-		idempotencyBodies[endpoint][idempotencyKey] = bodyHash
+		err = idempotencyRepository.SaveIdempotencyKey(context.Background(), endpoint, idempotencyKey, bodyHash, time.Now())
+		if err != nil {
+			http.Error(w, "Error saving idempotency key", http.StatusInternalServerError)
+			return
+		}
 
 		next.ServeHTTP(w, r)
 	})

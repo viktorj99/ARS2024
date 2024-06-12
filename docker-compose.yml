@@ -2,7 +2,9 @@ version: "3.8"
 
 services:
   server:
-    image: jovanovicviktor4701/configuration-server:latest
+    build: 
+      context: .
+      dockerfile: Dockerfile
     restart: always
     container_name: "configuration-server"
     hostname: "configuration-server"
