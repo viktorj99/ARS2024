@@ -67,7 +67,7 @@ func main() {
 		log.Fatalf("Failed to create Consul repository: %v", err)
 	}
 
-	idempotencyRepo, err := repository.NewIdempotencyRepository("127.0.0.1", "8500")
+	idempotencyRepo, err := repository.NewIdempotencyRepository()
 	if err != nil {
 		log.Fatalf("Failed to create Idempotency repository: %v", err)
 	}

@@ -4,9 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"time"
-
 	"log"
+	"os"
+	"time"
 
 	"github.com/hashicorp/consul/api"
 	"go.opentelemetry.io/otel"
@@ -23,9 +23,9 @@ type IdempotencyData struct {
 	Timestamp time.Time `json:"timestamp"`
 }
 
-func NewIdempotencyRepository(consulAddress, consulPort string) (*IdempotencyRepository, error) {
+func NewIdempotencyRepository() (*IdempotencyRepository, error) {
 	config := api.DefaultConfig()
-	config.Address = fmt.Sprintf("%s:%s", consulAddress, consulPort)
+	config.Address = fmt.Sprintf("%s:%s", os.Getenv("DB"), os.Getenv("DBPORT"))
 
 	client, err := api.NewClient(config)
 	if err != nil {
@@ -44,7 +44,7 @@ func (r *IdempotencyRepository) GetIdempotencyKey(ctx context.Context, endpoint,
 	defer span.End()
 
 	kv := r.client.KV()
-	key := fmt.Sprintf("idempotency/%s/%s", endpoint, idempotencyKey)
+	key := fmt.Sprintf("idempotency%s/%s", endpoint, idempotencyKey)
 	log.Printf("Getting idempotency key: %s", key)
 	pair, _, err := kv.Get(key, nil)
 	if err != nil {
@@ -81,7 +81,7 @@ func (r *IdempotencyRepository) SaveIdempotencyKey(ctx context.Context, endpoint
 		return err
 	}
 	p := &api.KVPair{
-		Key:   fmt.Sprintf("idempotency/%s/%s", endpoint, idempotencyKey),
+		Key:   fmt.Sprintf("idempotency%s/%s", endpoint, idempotencyKey),
 		Value: dataBytes,
 	}
 	log.Printf("Saving idempotency key: %s with data: %v", p.Key, data)

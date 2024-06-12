@@ -5,6 +5,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -36,6 +37,7 @@ func IdempotencyMiddleware(next http.Handler) http.Handler {
 		}
 
 		endpoint := r.URL.Path
+		fmt.Println(endpoint)
 
 		bodyBytes, err := io.ReadAll(r.Body)
 		if err != nil {
@@ -57,7 +59,7 @@ func IdempotencyMiddleware(next http.Handler) http.Handler {
 
 		if existingHash == bodyHash {
 			log.Printf("Duplicate request detected: %s for endpoint: %s", idempotencyKey, endpoint)
-			http.Error(w, "Duplicate request with same bodyyyy daddy", http.StatusConflict)
+			http.Error(w, "Duplicate request with same body.", http.StatusConflict)
 			return
 		}
 
