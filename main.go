@@ -84,21 +84,21 @@ func main() {
 
 	limiter := rate.NewLimiter(0.167, 10)
 
-	router.Handle("/configs/{name}/{version}", handlers.RateLimit(limiter, count(http.HandlerFunc(handlerConfig.GetConfig)))).Methods("GET")
-	router.Handle("/configs", handlers.RateLimit(limiter, handlers.IdempotencyMiddleware(count(http.HandlerFunc(handlerConfig.AddConfig))))).Methods("POST")
-	router.Handle("/configs/{name}/{version}", handlers.RateLimit(limiter, count(http.HandlerFunc(handlerConfig.DeleteConfig)))).Methods("DELETE")
+	router.Handle("/configs/{name}/{version}", handlers.RateLimit(limiter, Count(http.HandlerFunc(handlerConfig.GetConfig), "GET", "/configs/{name}/{version}"))).Methods("GET")
+	router.Handle("/configs", handlers.RateLimit(limiter, handlers.IdempotencyMiddleware(Count(http.HandlerFunc(handlerConfig.AddConfig), "POST", "/configs")))).Methods("POST")
+	router.Handle("/configs/{name}/{version}", handlers.RateLimit(limiter, Count(http.HandlerFunc(handlerConfig.DeleteConfig), "DELETE", "/configs/{name}/{version}"))).Methods("DELETE")
 
-	router.Handle("/configGroups/{name}/{version}", handlers.RateLimit(limiter, count(http.HandlerFunc(handlerConfigGroup.GetConfigGroup)))).Methods("GET")
-	router.Handle("/configGroups", handlers.RateLimit(limiter, handlers.IdempotencyMiddleware(count(http.HandlerFunc(handlerConfigGroup.AddConfigGroup))))).Methods("POST")
-	router.Handle("/configGroups/{name}/{version}", handlers.RateLimit(limiter, count(http.HandlerFunc(handlerConfigGroup.DeleteConfigGroup)))).Methods("DELETE")
-	router.Handle("/configGroups/{name}/{version}", handlers.RateLimit(limiter, handlers.IdempotencyMiddleware(count(http.HandlerFunc(handlerConfigGroup.AddConfigToGroup))))).Methods("POST")
-	router.Handle("/configGroups/{groupName}/{groupVersion}/{configName}/{configVersion}", handlers.RateLimit(limiter, count(http.HandlerFunc(handlerConfigGroup.DeleteConfigFromGroup)))).Methods("DELETE")
-	router.Handle("/configGroups/{groupName}/{groupVersion}/{labels}", handlers.RateLimit(limiter, count(http.HandlerFunc(handlerConfigGroup.GetConfigsFromGroupByLabels)))).Methods("GET")
-	router.Handle("/configGroups/{groupName}/{groupVersion}/{labels}", handlers.RateLimit(limiter, count(http.HandlerFunc(handlerConfigGroup.DeleteConfigsFromGroupByLabels)))).Methods("DELETE")
+	router.Handle("/configGroups/{name}/{version}", handlers.RateLimit(limiter, Count(http.HandlerFunc(handlerConfigGroup.GetConfigGroup), "GET", "/configGroups/{name}/{version}"))).Methods("GET")
+	router.Handle("/configGroups", handlers.RateLimit(limiter, handlers.IdempotencyMiddleware(Count(http.HandlerFunc(handlerConfigGroup.AddConfigGroup), "POST", "/configGroups")))).Methods("POST")
+	router.Handle("/configGroups/{name}/{version}", handlers.RateLimit(limiter, Count(http.HandlerFunc(handlerConfigGroup.DeleteConfigGroup), "DELETE", "/configGroups/{name}/{version}"))).Methods("DELETE")
+	router.Handle("/configGroups/{name}/{version}", handlers.RateLimit(limiter, handlers.IdempotencyMiddleware(Count(http.HandlerFunc(handlerConfigGroup.AddConfigToGroup), "POST", "/configGroups/{name}/{version}")))).Methods("POST")
+	router.Handle("/configGroups/{groupName}/{groupVersion}/{configName}/{configVersion}", handlers.RateLimit(limiter, Count(http.HandlerFunc(handlerConfigGroup.DeleteConfigFromGroup), "DELETE", "/configGroups/{groupName}/{groupVersion}/{configName}/{configVersion}"))).Methods("DELETE")
+	router.Handle("/configGroups/{groupName}/{groupVersion}/{labels}", handlers.RateLimit(limiter, Count(http.HandlerFunc(handlerConfigGroup.GetConfigsFromGroupByLabels), "GET", "/configGroups/{groupName}/{groupVersion}/{labels}"))).Methods("GET")
+	router.Handle("/configGroups/{groupName}/{groupVersion}/{labels}", handlers.RateLimit(limiter, Count(http.HandlerFunc(handlerConfigGroup.DeleteConfigsFromGroupByLabels), "DELETE", "/configGroups/{groupName}/{groupVersion}/{labels}"))).Methods("DELETE")
 
 	// Swagger documentation route
 	router.PathPrefix("/swagger").Handler(httpSwagger.WrapHandler)
-	router.Path("/metrics").Handler(metricsHandler())
+	router.Path("/metrics").Handler(MetricsHandler())
 
 	server := &http.Server{
 		Addr:    "0.0.0.0:8080",
