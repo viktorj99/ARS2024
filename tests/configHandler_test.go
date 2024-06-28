@@ -86,6 +86,7 @@ func TestDeleteConfig(t *testing.T) {
 	repo := &TestConfigRepository{}
 	configService := service.NewConfigService(repo, otel.Tracer("test-tracer"))
 	handler := handlers.NewConfigHandler(configService, otel.Tracer("test-tracer"))
+	t.Fail()
 
 	// Priprema request-a
 	req, err := http.NewRequest("DELETE", "/configs/testConfig/1", nil)
@@ -106,7 +107,7 @@ func TestDeleteConfig(t *testing.T) {
 	handler.DeleteConfig(rr, req)
 
 	// Provera rezultata
-	assert.Equal(t, http.StatusOK, rr.Code, "Expected status OK")
+	assert.Equal(t, http.StatusOK, rr.Code, "Greska")
 	assert.Contains(t, rr.Body.String(), "Configuration successfully deleted", "Expected success message in response")
 }
 
